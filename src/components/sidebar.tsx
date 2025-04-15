@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import Image from "next/image"
-import { cn } from "@/lib/utils"
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import Image from "next/image";
+import { cn } from "@/lib/utils";
 import {
   BarChart3,
   Users,
@@ -23,25 +23,28 @@ import {
   X,
   User,
   SettingsIcon,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
-  className?: string
+  className?: string;
 }
 
 interface NavItem {
-  label: string
-  icon: React.ElementType
-  href: string
-  active?: boolean
+  label: string;
+  icon: React.ElementType;
+  href: string;
+  active?: boolean;
 }
 
 export function Sidebar({ className }: SidebarProps) {
-  const pathname = usePathname()
-  const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const pathname = usePathname();
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { user } = useAuthStore();
+  console.log("user", user);
 
   // Define navigation items - simplified with no submenus
   const routes: NavItem[] = [
@@ -123,7 +126,7 @@ export function Sidebar({ className }: SidebarProps) {
       href: "/settings",
       active: pathname.startsWith("/settings"),
     },
-  ]
+  ];
 
   const NavItems = () => (
     <>
@@ -139,7 +142,7 @@ export function Sidebar({ className }: SidebarProps) {
             />
           </div>
           <div className="text-xs font-medium mt-2 text-center">
-            <div>Naitik Salvi</div>
+            <div>{user?.name}</div>
             <div>ERP System</div>
           </div>
         </div>
@@ -152,24 +155,31 @@ export function Sidebar({ className }: SidebarProps) {
               href={route.href}
               className={cn(
                 "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-all hover:text-[#0089ff] hover:bg-[#e8f5ff]",
-                route.active ? "bg-[#e8f5ff] text-[#0089ff] font-medium" : "text-muted-foreground",
+                route.active
+                  ? "bg-[#e8f5ff] text-[#0089ff] font-medium"
+                  : "text-muted-foreground"
               )}
               onClick={() => setIsMobileOpen(false)}
             >
-              <route.icon className={cn("h-4 w-4", route.active ? "text-[#0089ff]" : "")} />
+              <route.icon
+                className={cn("h-4 w-4", route.active ? "text-[#0089ff]" : "")}
+              />
               {route.label}
             </Link>
           ))}
         </div>
       </ScrollArea>
     </>
-  )
+  );
 
   return (
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={cn("hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-[80] bg-white border-r", className)}
+        className={cn(
+          "hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-[80] bg-white border-r",
+          className
+        )}
       >
         <div className="flex flex-col flex-1 h-full">
           <NavItems />
@@ -188,7 +198,11 @@ export function Sidebar({ className }: SidebarProps) {
           <SheetContent side="left" className="p-0 w-64">
             <div className="flex flex-col h-full">
               <div className="absolute right-4 top-4">
-                <Button variant="ghost" size="icon" onClick={() => setIsMobileOpen(false)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsMobileOpen(false)}
+                >
                   <X className="h-5 w-5" />
                   <span className="sr-only">Close</span>
                 </Button>
@@ -199,5 +213,5 @@ export function Sidebar({ className }: SidebarProps) {
         </Sheet>
       </div>
     </>
-  )
+  );
 }
