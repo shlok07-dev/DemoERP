@@ -1,8 +1,7 @@
 "use client";
 
 import type React from "react";
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -28,6 +27,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuthStore } from "@/lib/store/useAuthStore";
+import { log } from "console";
+import { useRouter } from "next/navigation";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
@@ -43,10 +44,19 @@ interface NavItem {
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   console.log("user", user);
+  const router = useRouter();
+  
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push("/login"); // Redirect to login page after logout
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
-  // Define navigation items - simplified with no submenus
   const routes: NavItem[] = [
     {
       label: "Dashboard",
@@ -132,7 +142,6 @@ export function Sidebar({ className }: SidebarProps) {
     <>
       <div className="px-4 py-4 flex items-center justify-center">
         <div className="flex flex-col items-center">
-        
           <div className="text-xs font-medium mt-2 text-center">
             <div>{user?.name}</div>
             <div>ERP System</div>
@@ -161,6 +170,16 @@ export function Sidebar({ className }: SidebarProps) {
           ))}
         </div>
       </ScrollArea>
+      <div className="px-3 pb-4 mt-auto">
+        <Button
+          variant="outline"
+          className="w-full justify-start text-sm text-red-600 hover:bg-red-50"
+          onClick={handleLogout}
+        >
+          <X className="mr-2 h-4 w-4" />
+          Logout
+        </Button>
+      </div>
     </>
   );
 
