@@ -19,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 
 const formSchema = z.object({
@@ -56,7 +56,7 @@ export default function LoginForm() {
 
       // Check if login was successful
       const authState = useAuthStore.getState();
-
+     console.log("Auth State:", authState.isAuthenticated); // Debugging line
       if (authState.isAuthenticated) {
         toast({
           title: "Success!",
@@ -66,16 +66,17 @@ export default function LoginForm() {
         router.push("/dashboard");
       } else {
         toast({
-          title: "Authentication failed",
-          description: authState.error,
+          title: "Invalid Credentials  !",
+          description: "Invalid email or password. Please try again.",
           variant: "destructive",
         });
       }
     } catch {
-      // Just in case, show fallback error
+      const authState = useAuthStore.getState();
+      // Just in case, show fallback error 
       toast({
         title: "Authentication failed",
-        description: "Invalid email or password. Please try again.",
+        description: authState.error,
         variant: "destructive",
       });
     }
