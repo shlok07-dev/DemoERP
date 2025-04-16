@@ -77,7 +77,7 @@ export default function CreateBudgetPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="budget-amount">Budget amount</Label>
-                      <Input id="budget-amount" placeholder="Enter amount in $" type="number" />
+                      <Input id="budget-amount" placeholder="Enter amount in ₹" type="number" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="date">Date</Label>
@@ -118,7 +118,7 @@ export default function CreateBudgetPage() {
                       <th className="text-left py-3 px-2">S/N</th>
                       <th className="text-left py-3 px-2">Budget No.</th>
                       <th className="text-left py-3 px-2">Budget Description</th>
-                      <th className="text-left py-3 px-2">Budget Amount ($)</th>
+                      <th className="text-left py-3 px-2">Budget Amount (₹)</th>
                       <th className="text-left py-3 px-2">Date</th>
                     </tr>
                   </thead>

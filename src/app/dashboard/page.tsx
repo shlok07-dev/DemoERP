@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header"
 import { StatCard } from "@/components/stat-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Activity, DollarSign, Users, FileText } from "lucide-react"
+import { Activity, IndianRupee , Users, FileText } from "lucide-react"
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -183,9 +183,9 @@ export default function DashboardPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="Total Revenue"
-              value="$45,231.89"
+              value="45,231.89 ₹"
               description="Monthly revenue"
-              icon={DollarSign}
+              icon={IndianRupee}
               trend={{ value: "20.1%", positive: true }}
             />
             <StatCard

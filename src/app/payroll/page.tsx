@@ -70,7 +70,7 @@ export default function PayrollPage() {
     labels: ["Basic Salary", "Housing Allowance", "Transport Allowance", "Medical Allowance", "Other Allowances"],
     datasets: [
       {
-        label: "Amount (₦)",
+        label: "Amount (₹)",
         data: [2500000, 1000000, 800000, 500000, 400000],
         backgroundColor: [
           "rgba(0, 137, 255, 0.7)",
@@ -96,7 +96,7 @@ export default function PayrollPage() {
       y: {
         beginAtZero: true,
         ticks: {
-          callback: (value: any) => "₦" + value.toLocaleString(),
+          callback: (value: any) => "₹" + value.toLocaleString(),
         },
       },
     },
@@ -114,7 +114,7 @@ export default function PayrollPage() {
       y: {
         beginAtZero: true,
         ticks: {
-          callback: (value: any) => "₦" + value.toLocaleString(),
+          callback: (value: any) => "₹" + value.toLocaleString(),
         },
       },
     },
@@ -140,7 +140,7 @@ export default function PayrollPage() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-2xl font-bold">₦5,205,350.00</p>
+                  <p className="text-2xl font-bold">₹5,205,350.00</p>
                   <p className="text-sm text-muted-foreground">Gross salary this month</p>
                   <div className="flex items-center mt-2">
                     <ArrowUp className="h-4 w-4 text-[#10a142] mr-1" />
@@ -158,7 +158,7 @@ export default function PayrollPage() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-2xl font-bold">₦4,550,350.00</p>
+                  <p className="text-2xl font-bold">₹4,550,350.00</p>
                   <p className="text-sm text-muted-foreground">Net salary this month</p>
                   <div className="flex items-center mt-2">
                     <ArrowUp className="h-4 w-4 text-[#10a142] mr-1" />
@@ -176,7 +176,7 @@ export default function PayrollPage() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-2xl font-bold">₦550,350.00</p>
+                  <p className="text-2xl font-bold">₹550,350.00</p>
                   <p className="text-sm text-muted-foreground">Total tax this month</p>
                   <div className="flex items-center mt-2">
                     <ArrowDown className="h-4 w-4 text-[#ed3237] mr-1" />
@@ -194,7 +194,7 @@ export default function PayrollPage() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-2xl font-bold">₦150,350.00</p>
+                  <p className="text-2xl font-bold">₹150,350.00</p>
                   <p className="text-sm text-muted-foreground">Total loan this month</p>
                   <div className="flex items-center mt-2">
                     <ArrowDown className="h-4 w-4 text-[#ed3237] mr-1" />
@@ -284,31 +284,31 @@ export default function PayrollPage() {
                           id: "01",
                           title: "Managing Director",
                           level: "MD/CEO",
-                          basicSalary: "₦445,331.00",
-                          allowance: "₦600,000.00",
-                          grossSalary: "₦1,145,331.00",
-                          deductions: "₦224,000.00",
-                          netSalary: "₦921,331.00",
+                          basicSalary: "₹445,331.00",
+                          allowance: "₹600,000.00",
+                          grossSalary: "₹1,145,331.00",
+                          deductions: "₹224,000.00",
+                          netSalary: "₹921,331.00",
                         },
                         {
                           id: "02",
                           title: "Executive Director",
                           level: "ED",
-                          basicSalary: "₦395,000.00",
-                          allowance: "₦197,500.00",
-                          grossSalary: "₦592,500.00",
-                          deductions: "₦118,500.00",
-                          netSalary: "₦474,000.00",
+                          basicSalary: "₹395,000.00",
+                          allowance: "₹197,500.00",
+                          grossSalary: "₹592,500.00",
+                          deductions: "₹118,500.00",
+                          netSalary: "₹474,000.00",
                         },
                         {
                           id: "03",
                           title: "General Manager",
                           level: "GM",
-                          basicSalary: "₦345,331.00",
-                          allowance: "₦172,665.50",
-                          grossSalary: "₦517,996.50",
-                          deductions: "₦103,599.30",
-                          netSalary: "₦414,397.20",
+                          basicSalary: "₹345,331.00",
+                          allowance: "₹172,665.50",
+                          grossSalary: "₹517,996.50",
+                          deductions: "₹103,599.30",
+                          netSalary: "₹414,397.20",
                         },
                       ].map((item, index) => (
                         <tr key={item.id} className={index !== 2 ? "border-b" : ""}>
@@ -421,33 +421,33 @@ export default function PayrollPage() {
                           name: "Abubakar Alghazali",
                           title: "Managing Director",
                           level: "MD/CEO",
-                          basicSalary: "₦445,331.00",
-                          allowances: "₦600,000.00",
-                          grossSalary: "₦1,145,331.00",
-                          deduction: "₦224,000.00",
-                          netSalary: "₦921,331.00",
+                          basicSalary: "₹445,331.00",
+                          allowances: "₹600,000.00",
+                          grossSalary: "₹1,145,331.00",
+                          deduction: "₹224,000.00",
+                          netSalary: "₹921,331.00",
                         },
                         {
                           id: "02",
                           name: "Fatima Mohammed",
                           title: "Executive Director",
                           level: "ED",
-                          basicSalary: "₦395,000.00",
-                          allowances: "₦197,500.00",
-                          grossSalary: "₦592,500.00",
-                          deduction: "₦118,500.00",
-                          netSalary: "₦474,000.00",
+                          basicSalary: "₹395,000.00",
+                          allowances: "₹197,500.00",
+                          grossSalary: "₹592,500.00",
+                          deduction: "₹118,500.00",
+                          netSalary: "₹474,000.00",
                         },
                         {
                           id: "03",
                           name: "Ibrahim Bankole",
                           title: "General Manager",
                           level: "GM",
-                          basicSalary: "₦345,331.00",
-                          allowances: "₦172,665.50",
-                          grossSalary: "₦517,996.50",
-                          deduction: "₦103,599.30",
-                          netSalary: "₦414,397.20",
+                          basicSalary: "₹345,331.00",
+                          allowances: "₹172,665.50",
+                          grossSalary: "₹517,996.50",
+                          deduction: "₹103,599.30",
+                          netSalary: "₹414,397.20",
                         },
                       ].map((item, index) => (
                         <tr key={`${item.id}-${index}`} className={index !== 2 ? "border-b" : ""}>

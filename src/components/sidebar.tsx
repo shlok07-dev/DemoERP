@@ -132,15 +132,7 @@ export function Sidebar({ className }: SidebarProps) {
     <>
       <div className="px-4 py-4 flex items-center justify-center">
         <div className="flex flex-col items-center">
-          <div className="relative w-12 h-12">
-            <Image
-              src="/placeholder.svg?height=48&width=48"
-              alt="User"
-              width={48}
-              height={48}
-              className="rounded-full"
-            />
-          </div>
+        
           <div className="text-xs font-medium mt-2 text-center">
             <div>{user?.name}</div>
             <div>ERP System</div>
