@@ -22,7 +22,7 @@ export default function OfficeBudgetPage() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-2xl font-bold">$23,000,000</p>
+                  <p className="text-2xl font-bold">₹23,000,000</p>
                   <p className="text-sm text-muted-foreground">Total annual budget</p>
                   <div className="flex items-center mt-2">
                     <span className="text-xs text-[#10a142]">↑ 1% over than last year</span>
@@ -39,7 +39,7 @@ export default function OfficeBudgetPage() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-2xl font-bold">$10,000,000</p>
+                  <p className="text-2xl font-bold">₹10,000,000</p>
                   <p className="text-sm text-muted-foreground">Amount used YTD</p>
                 </div>
                 <div className="p-2 rounded-full bg-[#fff4e8]">
@@ -53,7 +53,7 @@ export default function OfficeBudgetPage() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-2xl font-bold">$13,000,000</p>
+                  <p className="text-2xl font-bold">₹13,000,000</p>
                   <p className="text-sm text-muted-foreground">Total budget balance</p>
                 </div>
                 <div className="p-2 rounded-full bg-[#f9efff]">
@@ -97,9 +97,9 @@ export default function OfficeBudgetPage() {
                     <th className="text-left py-3 px-2">S/N</th>
                     <th className="text-left py-3 px-2">Budget No</th>
                     <th className="text-left py-3 px-2">Budget Description</th>
-                    <th className="text-left py-3 px-2">Budgeted Amount ($)</th>
-                    <th className="text-left py-3 px-2">Actual Amount ($)</th>
-                    <th className="text-left py-3 px-2">Variance ($)</th>
+                    <th className="text-left py-3 px-2">Budgeted Amount (₹)</th>
+                    <th className="text-left py-3 px-2">Actual Amount (₹)</th>
+                    <th className="text-left py-3 px-2">Variance (₹)</th>
                     <th className="text-left py-3 px-2">Date</th>
                   </tr>
                 </thead>

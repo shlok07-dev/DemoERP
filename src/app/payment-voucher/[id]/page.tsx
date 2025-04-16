@@ -37,7 +37,7 @@ export default function PaymentVoucherDetailPage() {
           bankName: "First Bank",
           accountNumber: "1234567890",
           accountName: "Office Supplies Ltd",
-          amount: "₦250,000.00",
+          amount: "250,000.00 ₹",
           description:
             "Office supplies for Q4 including stationery, printer cartridges, and paper supplies for all departments.",
           category: "Office Supplies",

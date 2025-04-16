@@ -70,8 +70,8 @@ export default function StocksAndInventoryPage() {
       productId: "45656787",
       category: "Stationaries",
       qtyPurchased: "50pcs",
-      unitPrice: "₦100.00",
-      totalAmount: "₦5,000.00",
+      unitPrice: "₹100.00",
+      totalAmount: "₹5,000.00",
       inStock: "40pcs",
       supplier: "Big Ben's Store",
       status: "In stock",
@@ -83,8 +83,8 @@ export default function StocksAndInventoryPage() {
       productId: "69956787",
       category: "Stationaries",
       qtyPurchased: "20pcs",
-      unitPrice: "₦3,000.00",
-      totalAmount: "₦60,000.00",
+      unitPrice: "₹3,000.00",
+      totalAmount: "₹60,000.00",
       inStock: "0pcs",
       supplier: "Big Ben's Store",
       status: "Out of Stock",
@@ -96,8 +96,8 @@ export default function StocksAndInventoryPage() {
       productId: "36426787",
       category: "Detergent",
       qtyPurchased: "35pcs",
-      unitPrice: "₦5000.00",
-      totalAmount: "₦175,000.00",
+      unitPrice: "₹5000.00",
+      totalAmount: "₹175,000.00",
       inStock: "10pcs",
       supplier: "Quality wash",
       status: "Low in stock",
@@ -109,8 +109,8 @@ export default function StocksAndInventoryPage() {
       productId: "45656787",
       category: "Stationaries",
       qtyPurchased: "45pcs",
-      unitPrice: "₦200.00",
-      totalAmount: "₦9,000.00",
+      unitPrice: "₹200.00",
+      totalAmount: "₹9,000.00",
       inStock: "10pcs",
       supplier: "Big Ben's Store",
       status: "Low in Stock",
@@ -122,8 +122,8 @@ export default function StocksAndInventoryPage() {
       productId: "36426787",
       category: "Stationaries",
       qtyPurchased: "100pcs",
-      unitPrice: "₦2,000.00",
-      totalAmount: "₦200,000.00",
+      unitPrice: "₹2,000.00",
+      totalAmount: "₹200,000.00",
       inStock: "45pcs",
       supplier: "Big Ben's Store",
       status: "In Stock",
@@ -135,8 +135,8 @@ export default function StocksAndInventoryPage() {
       productId: "36420021",
       category: "Detergent",
       qtyPurchased: "10pcs",
-      unitPrice: "₦1,000.00",
-      totalAmount: "₦10,000.00",
+      unitPrice: "₹1,000.00",
+      totalAmount: "₹10,000.00",
       inStock: "0pcs",
       supplier: "Quality wash",
       status: "Out of Stock",
@@ -151,8 +151,8 @@ export default function StocksAndInventoryPage() {
       productId: "45656787",
       category: "Office equipments",
       qtyPurchased: "5pcs",
-      unitPrice: "₦90,000.00",
-      totalAmount: "₦450,000.00",
+      unitPrice: "₹90,000.00",
+      totalAmount: "₹450,000.00",
       inStock: "All functioning",
       supplier: "Big Ben's Store",
     },
@@ -163,8 +163,8 @@ export default function StocksAndInventoryPage() {
       productId: "67136787",
       category: "Automobile",
       qtyPurchased: "2pcs",
-      unitPrice: "₦1,500,000.00",
-      totalAmount: "₦3,000,000.00",
+      unitPrice: "₹1,500,000.00",
+      totalAmount: "₹3,000,000.00",
       inStock: "All functioning",
       supplier: "Innoson Vehicles",
     },
@@ -175,8 +175,8 @@ export default function StocksAndInventoryPage() {
       productId: "328422AA",
       category: "Electronics",
       qtyPurchased: "3pcs",
-      unitPrice: "₦150,000.00",
-      totalAmount: "₦450,000.00",
+      unitPrice: "₹150,000.00",
+      totalAmount: "₹450,000.00",
       inStock: "2 functioning",
       supplier: "Big Ben's Store",
     },
@@ -187,8 +187,8 @@ export default function StocksAndInventoryPage() {
       productId: "45656787",
       category: "Furniture",
       qtyPurchased: "15pcs",
-      unitPrice: "₦100,000.00",
-      totalAmount: "₦1,500,000.00",
+      unitPrice: "₹100,000.00",
+      totalAmount: "₹1,500,000.00",
       inStock: "All functioning",
       supplier: "Goodwill NG",
     },
@@ -199,8 +199,8 @@ export default function StocksAndInventoryPage() {
       productId: "00247791",
       category: "Electronics",
       qtyPurchased: "25pcs",
-      unitPrice: "₦90,000.00",
-      totalAmount: "₦1,250,000.00",
+      unitPrice: "₹90,000.00",
+      totalAmount: "₹1,250,000.00",
       inStock: "20 functioning",
       supplier: "HP Abuja Stores",
     },
@@ -211,8 +211,8 @@ export default function StocksAndInventoryPage() {
       productId: "45656787",
       category: "Office equipments",
       qtyPurchased: "5pcs",
-      unitPrice: "₦90,000.00",
-      totalAmount: "₦450,000.00",
+      unitPrice: "₹90,000.00",
+      totalAmount: "₹450,000.00",
       inStock: "All functioning",
       supplier: "Big Ben's Store",
     },
@@ -287,7 +287,7 @@ export default function StocksAndInventoryPage() {
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-3xl font-bold">₦5M</p>
+                      <p className="text-3xl font-bold">₹5M</p>
                       <p className="text-sm text-muted-foreground">Total item cost</p>
                       <div className="flex items-center mt-2">
                         <ArrowDown className="h-4 w-4 text-[#ed3237] mr-1" />
@@ -491,7 +491,7 @@ export default function StocksAndInventoryPage() {
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-3xl font-bold">₦250M</p>
+                      <p className="text-3xl font-bold">₹250M</p>
                       <p className="text-sm text-muted-foreground">Total item cost</p>
                       <div className="flex items-center mt-2">
                         <ArrowDown className="h-4 w-4 text-[#ed3237] mr-1" />
@@ -544,9 +544,9 @@ export default function StocksAndInventoryPage() {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis />
-                        <Tooltip formatter={(value) => [`₦${value.toLocaleString()}`, "Value"]} />
+                        <Tooltip formatter={(value) => [`₹${value.toLocaleString()}`, "Value"]} />
                         <Legend />
-                        <Bar dataKey="value" name="Value (₦)" fill="#0089ff" />
+                        <Bar dataKey="value" name="Value (₹)" fill="#0089ff" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>

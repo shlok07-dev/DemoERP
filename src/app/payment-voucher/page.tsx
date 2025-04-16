@@ -22,7 +22,7 @@ export default function PaymentVoucherPage() {
       date: "2023-10-15",
       payee: "Office Supplies Ltd",
       description: "Office supplies for Q4",
-      amount: "₦250,000.00",
+      amount: "250,000.00 ₹",
       requestedBy: "John Doe",
       approvedBy: "Sarah Johnson",
       status: "Approved",
@@ -32,7 +32,7 @@ export default function PaymentVoucherPage() {
       date: "2023-10-16",
       payee: "Tech Solutions Inc",
       description: "IT equipment purchase",
-      amount: "₦1,500,000.00",
+      amount: "1,500,000.00 ₹",
       requestedBy: "Jane Smith",
       approvedBy: "Michael Brown",
       status: "Approved",
@@ -42,7 +42,7 @@ export default function PaymentVoucherPage() {
       date: "2023-10-17",
       payee: "Maintenance Services",
       description: "Office maintenance",
-      amount: "₦350,000.00",
+      amount: "350,000.00 ₹",
       requestedBy: "Robert Wilson",
       approvedBy: "Pending",
       status: "Pending",
@@ -52,7 +52,7 @@ export default function PaymentVoucherPage() {
       date: "2023-10-18",
       payee: "Training Solutions",
       description: "Staff training program",
-      amount: "₦800,000.00",
+      amount: "800,000.00 ₹",
       requestedBy: "Emily Davis",
       approvedBy: "Pending",
       status: "Pending",
@@ -62,7 +62,7 @@ export default function PaymentVoucherPage() {
       date: "2023-10-19",
       payee: "Catering Services",
       description: "Company event catering",
-      amount: "₦450,000.00",
+      amount: "450,000.00 ₹",
       requestedBy: "Michael Johnson",
       approvedBy: "Rejected",
       status: "Rejected",
@@ -72,7 +72,7 @@ export default function PaymentVoucherPage() {
       date: "2023-10-20",
       payee: "Marketing Agency",
       description: "Q4 marketing campaign",
-      amount: "₦1,200,000.00",
+      amount: "1,200,000.00 ₹",
       requestedBy: "David Wilson",
       approvedBy: "Sarah Johnson",
       status: "Approved",
@@ -82,7 +82,7 @@ export default function PaymentVoucherPage() {
       date: "2023-10-21",
       payee: "Consulting Group",
       description: "Business strategy consulting",
-      amount: "₦2,000,000.00",
+      amount: "2,000,000.00 ₹",
       requestedBy: "Lisa Anderson",
       approvedBy: "Pending",
       status: "Pending",
@@ -92,7 +92,7 @@ export default function PaymentVoucherPage() {
       date: "2023-10-22",
       payee: "Utility Company",
       description: "Monthly utility bills",
-      amount: "₦180,000.00",
+      amount: "180,000.00 ₹",
       requestedBy: "John Doe",
       approvedBy: "Sarah Johnson",
       status: "Approved",
@@ -122,19 +122,19 @@ export default function PaymentVoucherPage() {
 
   // Calculate statistics
   const totalAmount = vouchers.reduce((sum, voucher) => {
-    return sum + Number.parseFloat(voucher.amount.replace("₦", "").replace(",", ""))
+    return sum + Number.parseFloat(voucher.amount.replace("₹", "").replace(",", ""))
   }, 0)
 
   const approvedAmount = vouchers
     .filter((voucher) => voucher.status === "Approved")
     .reduce((sum, voucher) => {
-      return sum + Number.parseFloat(voucher.amount.replace("₦", "").replace(",", ""))
+      return sum + Number.parseFloat(voucher.amount.replace("₹", "").replace(",", ""))
     }, 0)
 
   const pendingAmount = vouchers
     .filter((voucher) => voucher.status === "Pending")
     .reduce((sum, voucher) => {
-      return sum + Number.parseFloat(voucher.amount.replace("₦", "").replace(",", ""))
+      return sum + Number.parseFloat(voucher.amount.replace("₹", "").replace(",", ""))
     }, 0)
 
   return (
@@ -169,7 +169,7 @@ export default function PaymentVoucherPage() {
             <CardContent className="p-4 sm:p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-2xl font-bold">₦{totalAmount.toLocaleString()}</p>
+                  <p className="text-2xl font-bold">{totalAmount.toLocaleString()} ₹</p>
                   <p className="text-sm text-muted-foreground">Total Amount</p>
                 </div>
                 <div className="p-2 rounded-full bg-[#f9efff]">
@@ -183,7 +183,7 @@ export default function PaymentVoucherPage() {
             <CardContent className="p-4 sm:p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-2xl font-bold">₦{approvedAmount.toLocaleString()}</p>
+                  <p className="text-2xl font-bold">{approvedAmount.toLocaleString()} ₹</p>
                   <p className="text-sm text-muted-foreground">Approved Amount</p>
                 </div>
                 <div className="p-2 rounded-full bg-[#ecfff2]">
@@ -197,7 +197,7 @@ export default function PaymentVoucherPage() {
             <CardContent className="p-4 sm:p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-2xl font-bold">₦{pendingAmount.toLocaleString()}</p>
+                  <p className="text-2xl font-bold">{pendingAmount.toLocaleString()} ₹</p>
                   <p className="text-sm text-muted-foreground">Pending Amount</p>
                 </div>
                 <div className="p-2 rounded-full bg-[#fff8df]">
