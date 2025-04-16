@@ -6,7 +6,7 @@ export function middleware(request: NextRequest) {
   const publicRoutes = ["/login"];
   const isPublic = publicRoutes.some((route) => pathname.startsWith(route));
 
-  const auth_token = request.cookies.get("auth_token");
+  const auth_token = request.cookies.get("token");
   const isAuthenticated = !!auth_token;
 
   // Redirect unauthenticated users trying to access private routes

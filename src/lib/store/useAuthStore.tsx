@@ -37,7 +37,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null });
 
-          const response = await axios.post("/api/userLogin", {
+          const response = await axios.post("/api/auth/login", {
             email,
             password,
           });
@@ -72,7 +72,7 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true });
 
           // Call logout API endpoint to clear server-side session/cookies
-          await axios.post("/api/logout");
+          await axios.post("/api/auth/logout");
 
           set({
             user: null,
