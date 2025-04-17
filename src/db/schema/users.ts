@@ -1,7 +1,6 @@
 import { serial, text, timestamp, boolean, pgTable } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { accounts } from "./accounts";
-import { sessions } from "./sessions";
 import { payroll } from "./payroll";
 import { paymentVoucher } from "./paymentVoucher";
 import { communications } from "./communications";
@@ -24,7 +23,6 @@ export const users = pgTable("user", {
 
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
-  sessions: many(sessions),
   payrolls: many(payroll, { relationName: "payroll_user" }),
   processedPayrolls: many(payroll, { relationName: "payroll_processed_by" }),
   approvedPayrolls: many(payroll, { relationName: "payroll_approved_by" }),
