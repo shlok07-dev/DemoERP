@@ -7,6 +7,18 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
+import {
   BarChart3,
   Users,
   FileText,
@@ -171,14 +183,34 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       </ScrollArea>
       <div className="px-3 pb-4 mt-auto">
-        <Button
+      <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline"
+          className="w-full justify-start text-sm text-grey-600 hover:bg-red-50 hover:text-sky-600"
+          ><X className="mr-2 h-4 w-4" />
+          Logout</Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+          <AlertDialogDescription>
+          This will end your current session and log you out of your account. You can log back in at any time.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>No</AlertDialogCancel>
+          <AlertDialogAction onClick={handleLogout}>Yes</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+        {/* <Button
           variant="outline"
-          className="w-full justify-start text-sm text-red-600 hover:bg-red-50"
+          className="w-full justify-start text-sm text-grey-600 hover:bg-red-50 hover:text-sky-600"
           onClick={handleLogout}
         >
           <X className="mr-2 h-4 w-4" />
           Logout
-        </Button>
+        </Button> */}
       </div>
     </>
   );
