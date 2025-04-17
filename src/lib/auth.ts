@@ -1,10 +1,14 @@
 // lib/auth.ts
 import jwt from "jsonwebtoken";
-import { NextApiRequest } from "next";
 
-export function getUserFromRequest(req: NextApiRequest) {
-  const token = req.cookies.token;
-  if (!token) return null;
+export async function getUserFromRequest(request: Request) {
+  const authHeader = request.headers.get("Authorization");
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+
+  const token = authHeader.split(" ")[1];
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!);
