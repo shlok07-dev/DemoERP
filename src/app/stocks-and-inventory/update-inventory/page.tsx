@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { PageHeader } from "@/components/page-header"
@@ -13,37 +13,92 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Camera } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { useInventoryStore } from "@/lib/store/useInventoryStore" // Import the inventory store
 
 export default function UpdateInventoryPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  
+  // Use the inventory store
+  const { addInventoryItem, error } = useInventoryStore()
+  
   const [formData, setFormData] = useState({
-    productName: "",
+    name: "",
     productId: "",
     category: "",
-    quantity: "",
+    qtyPurchased: "",
     unitPrice: "",
     totalAmount: "",
     supplier: "",
     status: "",
-    description: "",
+    notes: "",
+    // Added additional fields from the store structure
+    supplierContact: "",
+    inStock: "",
+    minimumStockLevel: "",
+    reorderPoint: "",
+    location: "",
   })
+
+  // Calculate total amount when quantity or unit price changes
+  useEffect(() => {
+    if (formData.qtyPurchased && formData.unitPrice) {
+      const qty = parseFloat(formData.qtyPurchased.toString())
+      const price = parseFloat(formData.unitPrice.toString())
+      if (!isNaN(qty) && !isNaN(price)) {
+        setFormData(prev => ({
+          ...prev,
+          totalAmount: (qty * price).toFixed(2)
+        }))
+      }
+    }
+  }, [formData.qtyPurchased, formData.unitPrice])
+
+  // Show error toast if API call fails
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive",
+      })
+    }
+  }, [error, toast])
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false)
+    try {
+      // Convert string values to appropriate types
+      const inventoryItem = {
+        ...formData,
+        qtyPurchased: formData.qtyPurchased ? parseInt(formData.qtyPurchased.toString()) : undefined,
+        unitPrice: formData.unitPrice ? parseFloat(formData.unitPrice.toString()) : undefined,
+        totalAmount: formData.totalAmount ? parseFloat(formData.totalAmount.toString()) : undefined,
+        inStock: formData.qtyPurchased ? parseInt(formData.qtyPurchased.toString()) : undefined, // Initialize inStock with qtyPurchased
+        minimumStockLevel: formData.minimumStockLevel ? parseInt(formData.minimumStockLevel.toString()) : undefined,
+        reorderPoint: formData.reorderPoint ? parseInt(formData.reorderPoint.toString()) : undefined,
+      }
+
+      // Call the store function to add the item
+      await addInventoryItem(inventoryItem)
       setShowSuccessModal(true)
-    }, 1000)
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to add inventory item",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleContinue = () => {
@@ -82,12 +137,12 @@ export default function UpdateInventoryPage() {
             <div className="w-full md:w-2/3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div className="space-y-2">
-                  <Label htmlFor="product-name">Asset name</Label>
+                  <Label htmlFor="asset-name">Asset name</Label>
                   <Input
-                    id="product-name"
+                    id="asset-name"
                     placeholder="Enter asset name"
-                    value={formData.productName}
-                    onChange={(e) => handleChange("productName", e.target.value)}
+                    value={formData.name}
+                    onChange={(e) => handleChange("name", e.target.value)}
                     required
                   />
                 </div>
@@ -125,8 +180,9 @@ export default function UpdateInventoryPage() {
                   <Input
                     id="quantity"
                     placeholder="Enter quantity"
-                    value={formData.quantity}
-                    onChange={(e) => handleChange("quantity", e.target.value)}
+                    type="number"
+                    value={formData.qtyPurchased}
+                    onChange={(e) => handleChange("qtyPurchased", e.target.value)}
                     required
                   />
                 </div>
@@ -138,6 +194,8 @@ export default function UpdateInventoryPage() {
                   <Input
                     id="unit-price"
                     placeholder="Enter amount"
+                    type="number"
+                    step="0.01"
                     value={formData.unitPrice}
                     onChange={(e) => handleChange("unitPrice", e.target.value)}
                     required
@@ -150,7 +208,6 @@ export default function UpdateInventoryPage() {
                     id="total-amount"
                     placeholder="Amount"
                     value={formData.totalAmount}
-                    onChange={(e) => handleChange("totalAmount", e.target.value)}
                     readOnly
                   />
                 </div>
@@ -169,6 +226,18 @@ export default function UpdateInventoryPage() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="supplier-contact">Supplier Contact</Label>
+                  <Input
+                    id="supplier-contact"
+                    placeholder="Enter supplier contact"
+                    value={formData.supplierContact}
+                    onChange={(e) => handleChange("supplierContact", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
                   <Select value={formData.status} onValueChange={(value) => handleChange("status", value)} required>
                     <SelectTrigger id="status">
@@ -181,16 +250,50 @@ export default function UpdateInventoryPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    placeholder="Enter location"
+                    value={formData.location}
+                    onChange={(e) => handleChange("location", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label htmlFor="minimum-stock">Minimum Stock Level</Label>
+                  <Input
+                    id="minimum-stock"
+                    placeholder="Enter minimum stock level"
+                    type="number"
+                    value={formData.minimumStockLevel}
+                    onChange={(e) => handleChange("minimumStockLevel", e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reorder-point">Reorder Point</Label>
+                  <Input
+                    id="reorder-point"
+                    placeholder="Enter reorder point"
+                    type="number"
+                    value={formData.reorderPoint}
+                    onChange={(e) => handleChange("reorderPoint", e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-6 mb-8">
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="notes">Notes</Label>
                   <Textarea
-                    id="description"
+                    id="notes"
                     placeholder="Enter asset description"
-                    value={formData.description}
-                    onChange={(e) => handleChange("description", e.target.value)}
+                    value={formData.notes}
+                    onChange={(e) => handleChange("notes", e.target.value)}
                     rows={4}
                   />
                 </div>
