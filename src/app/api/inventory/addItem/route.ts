@@ -52,11 +52,14 @@ export async function POST(request: Request) {
         location: body.location || null,
         notes: body.notes || null,
         lastCheckedById: Number.parseInt(user.id),
-        lastCheckedDate: new Date(),
       })
       .returning();
 
-    return Response.json(newItem[0], { status: 201 });
+    return Response.json({
+      message: "Item Added Successfully",
+      item: newItem[0],
+      status: 200,
+    });
   } catch (error) {
     return handleApiError(error);
   }

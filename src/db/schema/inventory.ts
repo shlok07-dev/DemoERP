@@ -28,7 +28,7 @@ export const inventory = pgTable("inventory", {
   location: text("location"), // Storage location
   notes: text("notes"),
   lastCheckedById: integer("last_checked_by_id").references(() => users.id),
-  lastCheckedDate: timestamp("last_checked_date"),
+  lastCheckedDate: timestamp("last_checked_date").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
