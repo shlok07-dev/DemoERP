@@ -51,9 +51,15 @@ export async function POST(req: NextRequest) {
     { expiresIn: "1d" }
   );
 
+  // utils/filterUser.ts
+  function filterUser(user: any) {
+    const { password, ...safeUser } = user;
+    return safeUser;
+  }
+
   const response = NextResponse.json({
     message: "Login successful",
-    user: user,
+    user: filterUser(user),
     status: 200,
   });
 
