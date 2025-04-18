@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import Link from "next/link"
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
-import { ArrowUp, ArrowDown, BarChart3, Package, DollarSign } from "lucide-react"
+import { ArrowUp, ArrowDown, BarChart3, Package, DollarSign, Trash, Edit } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   BarChart,
@@ -22,13 +22,17 @@ import {
 import { useInventoryStore } from "@/lib/store/useInventoryStore" // Adjust if needed
 
 export default function InventoryPage() {
-  const { items, fetchInventory, loading, error } = useInventoryStore()
+  const { items, fetchInventory, loading, error, deleteInventoryItem } = useInventoryStore()
 
   useEffect(() => {
     fetchInventory()
   }, [fetchInventory])
 
-  console.log(items)
+  const handleDelete = async (id: number) => {
+    if (window.confirm("Are you sure you want to delete this item?")) {
+      await deleteInventoryItem(id);
+    }
+  };
 
   const inventoryCategoryData = [
     { name: "Office Equipment", value: 35 },
@@ -215,6 +219,7 @@ export default function InventoryPage() {
                   <th className="text-left py-3 px-4">In Stock</th>
                   <th className="text-left py-3 px-4">Supplier</th>
                   <th className="text-left py-3 px-4">Location</th>
+                  <th className="text-left py-3 px-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -231,6 +236,28 @@ export default function InventoryPage() {
                     <td className="py-4 px-4">{item.inStock ?? 0}</td>
                     <td className="py-4 px-4">{item.supplier || "—"}</td>
                     <td className="py-4 px-4">{item.location || "—"}</td>
+                    <td className="py-4 px-4 space-x-2">
+                      {/* Update button */}
+                      <Link href={`/stocks-and-inventory/update-inventory?id=${item.id}`}>
+                        <Button
+                          variant="outline"
+                          className="bg-blue-500 hover:bg-blue-600 text-white"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Update
+                        </Button>
+                      </Link>
+                      
+                      {/* Delete button */}
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleDelete(item.id!)}
+                        className="bg-red-500 hover:bg-red-600"
+                      >
+                        <Trash className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
@@ -13,16 +13,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Camera } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { useInventoryStore } from "@/lib/store/useInventoryStore" // Import the inventory store
+import { useInventoryStore } from "@/lib/store/useInventoryStore"
 
-export default function UpdateInventoryPage() {
+export default function InventoryItemPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const itemId = searchParams.get('id')
+  const isUpdateMode = !!itemId
+  
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [assetIdError, setAssetIdError] = useState("")
   
   // Use the inventory store
-  const { addInventoryItem, error } = useInventoryStore()
+  const { 
+    addInventoryItem, 
+    updateInventoryItem, 
+    items, 
+    fetchInventory, 
+    error, 
+    loading: storeLoading 
+  } = useInventoryStore()
   
   const [formData, setFormData] = useState({
     name: "",
@@ -34,13 +46,42 @@ export default function UpdateInventoryPage() {
     supplier: "",
     status: "",
     notes: "",
-    // Added additional fields from the store structure
     supplierContact: "",
     inStock: "",
     minimumStockLevel: "",
     reorderPoint: "",
     location: "",
   })
+
+  // Fetch inventory data when component mounts to have the latest items for ID validation
+  useEffect(() => {
+    fetchInventory()
+  }, [fetchInventory])
+
+  // Populate form with existing data when in update mode
+  useEffect(() => {
+    if (isUpdateMode && items.length > 0 && itemId) {
+      const itemToUpdate = items.find(item => item.id === parseInt(itemId))
+      if (itemToUpdate) {
+        setFormData({
+          name: itemToUpdate.name || "",
+          productId: itemToUpdate.productId || "",
+          category: itemToUpdate.category || "",
+          qtyPurchased: itemToUpdate.qtyPurchased?.toString() || "",
+          unitPrice: itemToUpdate.unitPrice?.toString() || "",
+          totalAmount: itemToUpdate.totalAmount?.toString() || "",
+          supplier: itemToUpdate.supplier || "",
+          status: itemToUpdate.status || "",
+          notes: itemToUpdate.notes || "",
+          supplierContact: itemToUpdate.supplierContact || "",
+          inStock: itemToUpdate.inStock?.toString() || "",
+          minimumStockLevel: itemToUpdate.minimumStockLevel?.toString() || "",
+          reorderPoint: itemToUpdate.reorderPoint?.toString() || "",
+          location: itemToUpdate.location || "",
+        })
+      }
+    }
+  }, [isUpdateMode, items, itemId])
 
   // Calculate total amount when quantity or unit price changes
   useEffect(() => {
@@ -68,11 +109,29 @@ export default function UpdateInventoryPage() {
   }, [error, toast])
 
   const handleChange = (field: string, value: string) => {
+    // Clear asset ID error when changing the productId field
+    if (field === "productId") {
+      setAssetIdError("")
+    }
     setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  // Check if asset ID already exists
+  const checkAssetIdExists = (productId: string) => {
+    return items.some(item => item.productId === productId)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Check if asset ID already exists (only when adding new item)
+    if (!isUpdateMode && checkAssetIdExists(formData.productId)) {
+      setAssetIdError("This Asset ID already exists. Please use a different ID.")
+      // Scroll to the asset ID field to ensure the error is visible
+      document.getElementById("product-id")?.scrollIntoView({ behavior: "smooth", block: "center" })
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -82,22 +141,39 @@ export default function UpdateInventoryPage() {
         qtyPurchased: formData.qtyPurchased ? parseInt(formData.qtyPurchased.toString()) : undefined,
         unitPrice: formData.unitPrice ? parseFloat(formData.unitPrice.toString()) : undefined,
         totalAmount: formData.totalAmount ? parseFloat(formData.totalAmount.toString()) : undefined,
-        inStock: formData.qtyPurchased ? parseInt(formData.qtyPurchased.toString()) : undefined, // Initialize inStock with qtyPurchased
+        inStock: isUpdateMode 
+          ? formData.inStock ? parseInt(formData.inStock.toString()) : undefined
+          : formData.qtyPurchased ? parseInt(formData.qtyPurchased.toString()) : undefined, // Initialize inStock with qtyPurchased only when adding
         minimumStockLevel: formData.minimumStockLevel ? parseInt(formData.minimumStockLevel.toString()) : undefined,
         reorderPoint: formData.reorderPoint ? parseInt(formData.reorderPoint.toString()) : undefined,
       }
 
-      // Call the store function to add the item
-      await addInventoryItem(inventoryItem)
+      if (isUpdateMode && itemId) {
+        // Update existing item
+        await updateInventoryItem(parseInt(itemId), inventoryItem)
+      } else {
+        // Add new item
+        await addInventoryItem(inventoryItem)
+      }
+      
       setShowSuccessModal(true)
     } catch (err) {
       toast({
         title: "Error",
-        description: "Failed to add inventory item",
+        description: isUpdateMode ? "Failed to update inventory item" : "Failed to add inventory item",
         variant: "destructive",
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Validate asset ID as user types
+  const validateAssetId = () => {
+    if (!isUpdateMode && formData.productId && checkAssetIdExists(formData.productId)) {
+      setAssetIdError("This Asset ID already exists. Please use a different ID.")
+    } else {
+      setAssetIdError("")
     }
   }
 
@@ -106,11 +182,22 @@ export default function UpdateInventoryPage() {
     router.push("/stocks-and-inventory")
   }
 
+  const pageTitle = isUpdateMode ? "Update Inventory Asset" : "Add Inventory Asset"
+  const pageSubtitle = isUpdateMode 
+    ? "Update existing fixed assets in your inventory management system" 
+    : "Register new fixed assets in your inventory management system"
+  const submitButtonText = loading 
+    ? (isUpdateMode ? "Updating..." : "Adding...") 
+    : (isUpdateMode ? "Update Asset" : "Add Asset")
+  const successMessage = isUpdateMode 
+    ? "Your inventory asset has been updated successfully." 
+    : "Your inventory asset has been added successfully."
+
   return (
     <div>
       <PageHeader
-        title="Add Inventory Asset"
-        subtitle="Register new fixed assets in your inventory management system"
+        title={pageTitle}
+        subtitle={pageSubtitle}
       />
 
       <div className="p-6">
@@ -154,8 +241,18 @@ export default function UpdateInventoryPage() {
                     placeholder="Enter ID"
                     value={formData.productId}
                     onChange={(e) => handleChange("productId", e.target.value)}
+                    onBlur={validateAssetId}
+                    disabled={isUpdateMode}
+                    readOnly={isUpdateMode}
+                    className={isUpdateMode ? "bg-gray-100 cursor-not-allowed" : ""}
                     required
                   />
+                  {assetIdError && !isUpdateMode && (
+                    <p className="text-xs text-red-500 mt-1">{assetIdError}</p>
+                  )}
+                  {isUpdateMode && (
+                    <p className="text-xs text-muted-foreground mt-1">Asset ID cannot be changed during updates</p>
+                  )}
                 </div>
               </div>
 
@@ -209,6 +306,7 @@ export default function UpdateInventoryPage() {
                     placeholder="Amount"
                     value={formData.totalAmount}
                     readOnly
+                    className="bg-gray-100 cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -263,6 +361,19 @@ export default function UpdateInventoryPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {isUpdateMode && (
+                  <div className="space-y-2">
+                    <Label htmlFor="in-stock">In Stock</Label>
+                    <Input
+                      id="in-stock"
+                      placeholder="Enter current stock"
+                      type="number"
+                      value={formData.inStock}
+                      onChange={(e) => handleChange("inStock", e.target.value)}
+                    />
+                  </div>
+                )}
+                
                 <div className="space-y-2">
                   <Label htmlFor="minimum-stock">Minimum Stock Level</Label>
                   <Input
@@ -299,8 +410,12 @@ export default function UpdateInventoryPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full bg-[#0089ff] hover:bg-[#248cd8]" disabled={loading}>
-                {loading ? "Adding..." : "Add Asset"}
+              <Button 
+                type="submit" 
+                className="w-full bg-[#0089ff] hover:bg-[#248cd8]" 
+                disabled={loading || (!isUpdateMode && assetIdError !== "")}
+              >
+                {submitButtonText}
               </Button>
             </div>
           </form>
@@ -344,7 +459,7 @@ export default function UpdateInventoryPage() {
             </div>
 
             <h2 className="text-2xl font-bold mb-2">Congratulations</h2>
-            <p className="text-gray-600 mb-6">Your inventory asset has been added successfully.</p>
+            <p className="text-gray-600 mb-6">{successMessage}</p>
 
             <Button onClick={handleContinue} className="w-full h-12 rounded-md bg-[#0089ff] hover:bg-[#248cd8]">
               Ok

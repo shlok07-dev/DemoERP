@@ -224,8 +224,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
-                  <Line options={lineOptions} data={revenueData} />
-                </div>
+                <Bar options={barOptions} data={revenueData} />                </div>
               </CardContent>
             </Card>
 
