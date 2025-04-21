@@ -18,7 +18,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ToastAction } from "@/components/ui/toast";
 
 import {
   BarChart,
@@ -59,17 +58,122 @@ interface InventoryItem {
 }
 
 export default function InventoryPage() {
-  const {
-    items,
-    fetchInventory,
-    loading,
-    error,
-    deleteInventoryItem,
-    restoreInventoryItem,
-  } = useInventoryStore();
+  const { items, fetchInventory, loading, error, deleteInventoryItem } =
+    useInventoryStore();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
   const { toast } = useToast();
+
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof InventoryItem;
+    direction: "ascending" | "descending";
+  } | null>(null);
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Function to handle sorting
+  const requestSort = (key: keyof InventoryItem) => {
+    let direction: "ascending" | "descending" = "ascending";
+
+    if (
+      sortConfig &&
+      sortConfig.key === key &&
+      sortConfig.direction === "ascending"
+    ) {
+      direction = "descending";
+    }
+
+    setSortConfig({ key, direction });
+  };
+
+  // Function to get sorted items
+  const getSortedItems = (items: InventoryItem[]) => {
+    if (!sortConfig) return items;
+
+    return [...items].sort((a, b) => {
+      if (a[sortConfig.key] === undefined || b[sortConfig.key] === undefined)
+        return 0;
+
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        if (sortConfig.direction === "ascending") {
+          return aValue.localeCompare(bValue);
+        } else {
+          return bValue.localeCompare(aValue);
+        }
+      } else {
+        const numA = Number(aValue) || 0;
+        const numB = Number(bValue) || 0;
+
+        if (sortConfig.direction === "ascending") {
+          return numA - numB;
+        } else {
+          return numB - numA;
+        }
+      }
+    });
+  };
+
+  // Function to toggle item selection
+  const toggleItemSelection = (id: number) => {
+    setSelectedItems((prev) =>
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
+    );
+  };
+
+  // Function to select all items
+  const selectAllItems = () => {
+    if (filteredItems.length === selectedItems.length) {
+      setSelectedItems([]);
+    } else {
+      const validIds = filteredItems
+        .filter((item) => item.id !== undefined)
+        .map((item) => item.id as number);
+      setSelectedItems(validIds);
+    }
+  };
+
+  // Function to bulk delete selected items
+  const bulkDeleteItems = async () => {
+    if (selectedItems.length === 0) return;
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete ${selectedItems.length} items?`
+    );
+    if (!confirmDelete) return;
+
+    // Animate before deletion
+    setIsAnimating(true);
+    setTimeout(() => {
+      setIsAnimating(false);
+
+      // Delete all selected items
+      Promise.all(selectedItems.map((id) => deleteInventoryItem(id)))
+        .then(() => {
+          toast({
+            title: "Bulk Delete Successful",
+            description: `${selectedItems.length} items have been deleted`,
+            variant: "default",
+          });
+          setSelectedItems([]);
+        })
+        .catch((error) => {
+          toast({
+            title: "Error",
+            description: "Failed to delete some items",
+            variant: "destructive",
+          });
+        });
+    }, 800);
+  };
+
+  // Function to generate a random color based on category
+  const getCategoryColor = () => {
+    return "#0089ff"; // Use a consistent blue color
+  };
 
   useEffect(() => {
     fetchInventory();
@@ -101,72 +205,39 @@ export default function InventoryPage() {
     }
   }, [searchTerm, items]);
 
-  // Component for countdown display
-  const CountdownDisplay = ({ initialTime }: { initialTime: number }) => {
-    const [remainingTime, setRemainingTime] = useState(initialTime);
-
-    useEffect(() => {
-      const countdownInterval = setInterval(() => {
-        setRemainingTime((prev) => {
-          if (prev <= 1) {
-            clearInterval(countdownInterval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(countdownInterval);
-    }, []);
-
-    return <span>{remainingTime}</span>;
-  };
-
   const handleDelete = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this item?")) {
-      const success = await deleteInventoryItem(id);
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this item?"
+    );
+    if (confirmDelete) {
+      try {
+        // Add animation before deletion
+        setSelectedItems([id]);
+        setIsAnimating(true);
 
-      if (success) {
-        // Show success toast with undo button and countdown component
-        toast({
-          title: "Item deleted",
-          description: (
-            <div>
-              This action will be permanent in{" "}
-              <CountdownDisplay initialTime={10} /> seconds
-            </div>
-          ),
-          action: (
-            <ToastAction
-              altText="Undo"
-              onClick={async () => {
-                const restoreSuccess = await restoreInventoryItem(id);
-
-                if (restoreSuccess) {
-                  toast({
-                    title: "Success",
-                    description: "Item restored successfully",
-                    variant: "default",
-                  });
-                } else {
-                  toast({
-                    title: "Error",
-                    description: error || "Failed to restore item",
-                    variant: "destructive",
-                  });
-                }
-              }}
-            >
-              Undo
-            </ToastAction>
-          ),
-          duration: 10000, // 10 seconds
-        });
-      } else {
-        // Show error toast, using the error from store state
+        setTimeout(async () => {
+          try {
+            await deleteInventoryItem(id);
+            toast({
+              title: "Success!",
+              description: "Inventory item is successfully deleted.",
+              variant: "destructive",
+            });
+          } catch (error) {
+            toast({
+              title: "Error",
+              description: "Failed to delete the item",
+              variant: "destructive",
+            });
+          } finally {
+            setIsAnimating(false);
+            setSelectedItems([]);
+          }
+        }, 800);
+      } catch (error) {
         toast({
           title: "Error",
-          description: error || "Failed to delete item",
+          description: "Failed to delete the item",
           variant: "destructive",
         });
       }
@@ -453,7 +524,12 @@ export default function InventoryPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pr-10"
               />
-              <Button variant="ghost" size="icon" className="absolute right-0 top-0 h-full" onClick={() => {}}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full"
+                onClick={() => {}}
+              >
                 <Search className="h-4 w-4" />
               </Button>
             </div>
@@ -517,77 +593,101 @@ export default function InventoryPage() {
                           checked={
                             filteredItems.length > 0 &&
                             selectedItems.length > 0 &&
-                            selectedItems.length === filteredItems.filter((i) => i.id !== undefined).length
+                            selectedItems.length ===
+                              filteredItems.filter((i) => i.id !== undefined)
+                                .length
                           }
                           onChange={selectAllItems}
                           className="rounded"
                           aria-label="Select all items"
                         />
                       </th>
-                      <th className="text-left py-3 px-4 whitespace-nowrap">S/N</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">
+                        S/N
+                      </th>
                       <th
                         className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
                         onClick={() => requestSort("name")}
                       >
-                        Product Name {sortConfig?.key === "name" && (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        Product Name{" "}
+                        {sortConfig?.key === "name" &&
+                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
                       </th>
                       <th
                         className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
                         onClick={() => requestSort("productId")}
                       >
                         Product ID{" "}
-                        {sortConfig?.key === "productId" && (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        {sortConfig?.key === "productId" &&
+                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
                       </th>
                       <th
                         className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
                         onClick={() => requestSort("category")}
                       >
-                        Category {sortConfig?.key === "category" && (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        Category{" "}
+                        {sortConfig?.key === "category" &&
+                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
                       </th>
                       <th
                         className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
                         onClick={() => requestSort("qtyPurchased")}
                       >
-                        QTY {sortConfig?.key === "qtyPurchased" && (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        QTY{" "}
+                        {sortConfig?.key === "qtyPurchased" &&
+                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
                       </th>
                       <th
                         className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
                         onClick={() => requestSort("unitPrice")}
                       >
                         Unit Price{" "}
-                        {sortConfig?.key === "unitPrice" && (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        {sortConfig?.key === "unitPrice" &&
+                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
                       </th>
                       <th
                         className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
                         onClick={() => requestSort("totalAmount")}
                       >
-                        Total {sortConfig?.key === "totalAmount" && (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        Total{" "}
+                        {sortConfig?.key === "totalAmount" &&
+                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
                       </th>
                       <th
                         className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
                         onClick={() => requestSort("status")}
                       >
-                        Status {sortConfig?.key === "status" && (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        Status{" "}
+                        {sortConfig?.key === "status" &&
+                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
                       </th>
                       <th
                         className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
                         onClick={() => requestSort("inStock")}
                       >
-                        In Stock {sortConfig?.key === "inStock" && (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        In Stock{" "}
+                        {sortConfig?.key === "inStock" &&
+                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
                       </th>
                       <th
                         className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
                         onClick={() => requestSort("supplier")}
                       >
-                        Supplier {sortConfig?.key === "supplier" && (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        Supplier{" "}
+                        {sortConfig?.key === "supplier" &&
+                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
                       </th>
                       <th
                         className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
                         onClick={() => requestSort("location")}
                       >
-                        Location {sortConfig?.key === "location" && (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        Location{" "}
+                        {sortConfig?.key === "location" &&
+                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
                       </th>
-                      <th className="text-left py-3 px-4 whitespace-nowrap">Actions</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -595,9 +695,14 @@ export default function InventoryPage() {
                       <tr
                         key={`${item.productId || index}`}
                         className={`border-b hover:bg-gray-50 ${
-                          item.id !== undefined && selectedItems.includes(item.id) ? "bg-blue-50" : ""
+                          item.id !== undefined &&
+                          selectedItems.includes(item.id)
+                            ? "bg-blue-50"
+                            : ""
                         } ${
-                          item.id !== undefined && isAnimating && selectedItems.includes(item.id)
+                          item.id !== undefined &&
+                          isAnimating &&
+                          selectedItems.includes(item.id)
                             ? "opacity-50 animate-pulse"
                             : ""
                         }`}
@@ -606,16 +711,28 @@ export default function InventoryPage() {
                           {item.id !== undefined && (
                             <input
                               type="checkbox"
-                              checked={item.id !== undefined && selectedItems.includes(item.id)}
-                              onChange={() => item.id !== undefined && toggleItemSelection(item.id)}
+                              checked={
+                                item.id !== undefined &&
+                                selectedItems.includes(item.id)
+                              }
+                              onChange={() =>
+                                item.id !== undefined &&
+                                toggleItemSelection(item.id)
+                              }
                               className="rounded"
                               aria-label={`Select ${item.name || "item"}`}
                             />
                           )}
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">{index + 1}</td>
-                        <td className="py-4 px-4 whitespace-nowrap">{item.name || "-"}</td>
-                        <td className="py-4 px-4 whitespace-nowrap">{item.productId || "-"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          {index + 1}
+                        </td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          {item.name || "-"}
+                        </td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          {item.productId || "-"}
+                        </td>
                         <td className="py-4 px-4 whitespace-nowrap">
                           <span
                             className="px-2 py-1 rounded-full text-xs font-medium"
@@ -627,27 +744,39 @@ export default function InventoryPage() {
                             {item.category || "-"}
                           </span>
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">{item.qtyPurchased || "-"}</td>
-                        <td className="py-4 px-4 whitespace-nowrap">₹{item.unitPrice || "0"}</td>
-                        <td className="py-4 px-4 whitespace-nowrap">₹{item.totalAmount || "0"} </td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          {item.qtyPurchased || "-"}
+                        </td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          ₹{item.unitPrice || "0"}
+                        </td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          ₹{item.totalAmount || "0"}{" "}
+                        </td>
                         <td className="py-4 px-4 whitespace-nowrap">
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${
                               item.status === "Active"
                                 ? "bg-green-100 text-green-800"
                                 : item.status === "Low Stock"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : item.status === "Out of Stock"
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-gray-100 text-gray-800"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : item.status === "Out of Stock"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-gray-100 text-gray-800"
                             }`}
                           >
                             {item.status || "-"}
                           </span>
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">{item.inStock ?? 0}</td>
-                        <td className="py-4 px-4 whitespace-nowrap">{item.supplier || "-"}</td>
-                        <td className="py-4 px-4 whitespace-nowrap">{item.location || "-"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          {item.inStock ?? 0}
+                        </td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          {item.supplier || "-"}
+                        </td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          {item.location || "-"}
+                        </td>
                         <td className="py-4 px-4 whitespace-nowrap">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -702,11 +831,15 @@ export default function InventoryPage() {
                     ? "ring-2 ring-primary"
                     : "hover:ring-1 hover:ring-[#0089ff]"
                 } ${
-                  item.id !== undefined && isAnimating && selectedItems.includes(item.id)
+                  item.id !== undefined &&
+                  isAnimating &&
+                  selectedItems.includes(item.id)
                     ? "opacity-50 animate-pulse"
                     : ""
                 }`}
-                onClick={() => item.id !== undefined && toggleItemSelection(item.id)}
+                onClick={() =>
+                  item.id !== undefined && toggleItemSelection(item.id)
+                }
               >
                 <div
                   className="h-2 transition-all duration-300 group-hover:h-3"
@@ -721,7 +854,9 @@ export default function InventoryPage() {
                       <h3 className="font-medium truncate text-gray-800 group-hover:text-[#0089ff] transition-colors duration-300">
                         {item.name || "Unnamed Product"}
                       </h3>
-                      <p className="text-xs text-muted-foreground">ID: {item.productId || "-"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        ID: {item.productId || "-"}
+                      </p>
                     </div>
                     <div className="flex items-center">
                       <DropdownMenu>
@@ -735,8 +870,16 @@ export default function InventoryPage() {
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
-                          <Link href={`/stocks-and-inventory/update-inventory?id=${item.id || ""}`}>
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-48"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Link
+                            href={`/stocks-and-inventory/update-inventory?id=${
+                              item.id || ""
+                            }`}
+                          >
                             <DropdownMenuItem className="cursor-pointer">
                               <Edit className="h-4 w-4 mr-2 text-primary" />
                               <span>Update</span>
@@ -746,8 +889,8 @@ export default function InventoryPage() {
                           <DropdownMenuItem
                             className="cursor-pointer text-red-500 focus:text-red-500"
                             onClick={(e) => {
-                              e.stopPropagation()
-                              item.id !== undefined && handleDelete(item.id)
+                              e.stopPropagation();
+                              item.id !== undefined && handleDelete(item.id);
                             }}
                           >
                             <Trash className="h-4 w-4 mr-2" />
@@ -763,7 +906,9 @@ export default function InventoryPage() {
                       <p className="text-muted-foreground group-hover:text-blue-500 transition-colors duration-300">
                         Category
                       </p>
-                      <p className="font-medium truncate">{item.category || "-"}</p>
+                      <p className="font-medium truncate">
+                        {item.category || "-"}
+                      </p>
                     </div>
                     <div className="bg-gray-50 p-2 rounded group-hover:bg-white group-hover:shadow-md transition-all duration-300">
                       <p className="text-muted-foreground group-hover:text-blue-500 transition-colors duration-300">
@@ -790,13 +935,17 @@ export default function InventoryPage() {
                       <p className="text-muted-foreground group-hover:text-blue-500 transition-colors duration-300">
                         Supplier
                       </p>
-                      <p className="font-medium truncate max-w-[120px]">{item.supplier || "-"}</p>
+                      <p className="font-medium truncate max-w-[120px]">
+                        {item.supplier || "-"}
+                      </p>
                     </div>
                     <div className="text-right transition-transform duration-300 group-hover:-translate-x-1">
                       <p className="text-muted-foreground group-hover:text-blue-500 transition-colors duration-300">
                         Location
                       </p>
-                      <p className="font-medium truncate max-w-[120px]">{item.location || "-"}</p>
+                      <p className="font-medium truncate max-w-[120px]">
+                        {item.location || "-"}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
