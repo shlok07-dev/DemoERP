@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
-import { ArrowUp, ArrowDown, BarChart3, Package, DollarSign, AlertTriangle } from "lucide-react"
+import { ArrowUp, ArrowDown, BarChart3, Package, DollarSign, Trash, Edit, Search } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input" // Add Input import
+
 import {
   BarChart,
   Bar,
@@ -20,27 +21,51 @@ import {
   Pie,
   Cell,
 } from "recharts"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { MoreVertical } from "lucide-react"
+import { useInventoryStore } from "@/lib/store/useInventoryStore" // Adjust if needed
 
-export default function StocksAndInventoryPage() {
-  const [activeTab, setActiveTab] = useState("stocks")
+export default function InventoryPage() {
+  const { items, fetchInventory, loading, error, deleteInventoryItem } = useInventoryStore()
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filteredItems, setFilteredItems] = useState([])
 
-  // Stock category data for pie chart
-  const stockCategoryData = [
-    { name: "Stationaries", value: 45 },
-    { name: "Detergents", value: 20 },
-    { name: "Electronics", value: 15 },
-    { name: "Furniture", value: 10 },
-    { name: "Others", value: 10 },
-  ]
+  useEffect(() => {
+    fetchInventory()
+  }, [fetchInventory])
 
-  // Stock status data for bar chart
-  const stockStatusData = [
-    { name: "In Stock", value: 350, fill: "#10a142" },
-    { name: "Low Stock", value: 200, fill: "#fdcc1c" },
-    { name: "Out of Stock", value: 50, fill: "#ed3237" },
-  ]
+  useEffect(() => {
+    // Filter items based on search term
+    if (items && items.length > 0) {
+      const filtered = items.filter(item => {
+        const searchTermLower = searchTerm.toLowerCase();
+        return (
+          (item.name && item.name.toLowerCase().includes(searchTermLower)) ||
+          (item.productId && item.productId.toString().toLowerCase().includes(searchTermLower)) ||
+          (item.category && item.category.toLowerCase().includes(searchTermLower)) ||
+          (item.supplier && item.supplier.toLowerCase().includes(searchTermLower)) ||
+          (item.location && item.location.toLowerCase().includes(searchTermLower))
+        );
+      });
+      setFilteredItems(filtered);
+    } else {
+      setFilteredItems([]);
+    }
+  }, [searchTerm, items]);
 
-  // Inventory category data for pie chart
+  const handleDelete = async (id: number) => {
+    if (window.confirm("Are you sure you want to delete this item?")) {
+      await deleteInventoryItem(id);
+    }
+  };
+
   const inventoryCategoryData = [
     { name: "Office Equipment", value: 35 },
     { name: "Electronics", value: 25 },
@@ -49,7 +74,6 @@ export default function StocksAndInventoryPage() {
     { name: "Others", value: 5 },
   ]
 
-  // Monthly inventory value data
   const inventoryValueData = [
     { name: "Jan", value: 200000 },
     { name: "Feb", value: 220000 },
@@ -59,585 +83,252 @@ export default function StocksAndInventoryPage() {
     { name: "Jun", value: 300000 },
   ]
 
-  // Colors for pie charts
   const COLORS = ["#0089ff", "#00C49F", "#FFBB28", "#FF8042", "#a601ff"]
-
-  const stockItems = [
-    {
-      id: "01",
-      image: "/placeholder.svg?height=40&width=40",
-      name: "Pen",
-      productId: "45656787",
-      category: "Stationaries",
-      qtyPurchased: "50pcs",
-      unitPrice: "₹100.00",
-      totalAmount: "₹5,000.00",
-      inStock: "40pcs",
-      supplier: "Big Ben's Store",
-      status: "In stock",
-    },
-    {
-      id: "02",
-      image: "/placeholder.svg?height=40&width=40",
-      name: "A4 Paper",
-      productId: "69956787",
-      category: "Stationaries",
-      qtyPurchased: "20pcs",
-      unitPrice: "₹3,000.00",
-      totalAmount: "₹60,000.00",
-      inStock: "0pcs",
-      supplier: "Big Ben's Store",
-      status: "Out of Stock",
-    },
-    {
-      id: "03",
-      image: "/placeholder.svg?height=40&width=40",
-      name: "Liquid wash",
-      productId: "36426787",
-      category: "Detergent",
-      qtyPurchased: "35pcs",
-      unitPrice: "₹5000.00",
-      totalAmount: "₹175,000.00",
-      inStock: "10pcs",
-      supplier: "Quality wash",
-      status: "Low in stock",
-    },
-    {
-      id: "04",
-      image: "/placeholder.svg?height=40&width=40",
-      name: "Paper clips",
-      productId: "45656787",
-      category: "Stationaries",
-      qtyPurchased: "45pcs",
-      unitPrice: "₹200.00",
-      totalAmount: "₹9,000.00",
-      inStock: "10pcs",
-      supplier: "Big Ben's Store",
-      status: "Low in Stock",
-    },
-    {
-      id: "05",
-      image: "/placeholder.svg?height=40&width=40",
-      name: "Notepads",
-      productId: "36426787",
-      category: "Stationaries",
-      qtyPurchased: "100pcs",
-      unitPrice: "₹2,000.00",
-      totalAmount: "₹200,000.00",
-      inStock: "45pcs",
-      supplier: "Big Ben's Store",
-      status: "In Stock",
-    },
-    {
-      id: "06",
-      image: "/placeholder.svg?height=40&width=40",
-      name: "Air freshner",
-      productId: "36420021",
-      category: "Detergent",
-      qtyPurchased: "10pcs",
-      unitPrice: "₹1,000.00",
-      totalAmount: "₹10,000.00",
-      inStock: "0pcs",
-      supplier: "Quality wash",
-      status: "Out of Stock",
-    },
-  ]
-
-  const inventoryItems = [
-    {
-      id: "01",
-      image: "/placeholder.svg?height=40&width=40",
-      name: "1.5 Air conditioner",
-      productId: "45656787",
-      category: "Office equipments",
-      qtyPurchased: "5pcs",
-      unitPrice: "₹90,000.00",
-      totalAmount: "₹450,000.00",
-      inStock: "All functioning",
-      supplier: "Big Ben's Store",
-    },
-    {
-      id: "02",
-      image: "/placeholder.svg?height=40&width=40",
-      name: "Toyota Sienta Bus",
-      productId: "67136787",
-      category: "Automobile",
-      qtyPurchased: "2pcs",
-      unitPrice: "₹1,500,000.00",
-      totalAmount: "₹3,000,000.00",
-      inStock: "All functioning",
-      supplier: "Innoson Vehicles",
-    },
-    {
-      id: "03",
-      image: "/placeholder.svg?height=40&width=40",
-      name: "50inch Hisense TV",
-      productId: "328422AA",
-      category: "Electronics",
-      qtyPurchased: "3pcs",
-      unitPrice: "₹150,000.00",
-      totalAmount: "₹450,000.00",
-      inStock: "2 functioning",
-      supplier: "Big Ben's Store",
-    },
-    {
-      id: "04",
-      image: "/placeholder.svg?height=40&width=40",
-      name: "Office Chairs",
-      productId: "45656787",
-      category: "Furniture",
-      qtyPurchased: "15pcs",
-      unitPrice: "₹100,000.00",
-      totalAmount: "₹1,500,000.00",
-      inStock: "All functioning",
-      supplier: "Goodwill NG",
-    },
-    {
-      id: "05",
-      image: "/placeholder.svg?height=40&width=40",
-      name: "HP 15inch Desktops",
-      productId: "00247791",
-      category: "Electronics",
-      qtyPurchased: "25pcs",
-      unitPrice: "₹90,000.00",
-      totalAmount: "₹1,250,000.00",
-      inStock: "20 functioning",
-      supplier: "HP Abuja Stores",
-    },
-    {
-      id: "06",
-      image: "/placeholder.svg?height=40&width=40",
-      name: "Laser Jet Printers",
-      productId: "45656787",
-      category: "Office equipments",
-      qtyPurchased: "5pcs",
-      unitPrice: "₹90,000.00",
-      totalAmount: "₹450,000.00",
-      inStock: "All functioning",
-      supplier: "Big Ben's Store",
-    },
-  ]
 
   return (
     <div>
-      <PageHeader title="Inventory Management" subtitle="Track, manage, and optimize your stock and inventory assets" />
+      <PageHeader
+        title="Inventory Management"
+        subtitle="Track, manage, and optimize your inventory assets"
+      />
 
       <div className="p-6">
-        <div className="border-b mb-6">
-          <div className="flex">
-            <button
-              className={`px-4 py-2 font-medium ${
-                activeTab === "stocks" ? "text-[#0089ff] border-b-2 border-[#0089ff]" : "text-gray-500"
-              }`}
-              onClick={() => setActiveTab("stocks")}
-            >
-              Stocks
-            </button>
-            <button
-              className={`px-4 py-2 font-medium ${
-                activeTab === "inventory" ? "text-[#0089ff] border-b-2 border-[#0089ff]" : "text-gray-500"
-              }`}
-              onClick={() => setActiveTab("inventory")}
-            >
-              Inventory
-            </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-3xl font-bold">10</p>
+                  <p className="text-sm text-muted-foreground">Categories</p>
+                  <div className="flex items-center mt-2">
+                    <ArrowUp className="h-4 w-4 text-[#10a142] mr-1" />
+                    <span className="text-xs text-[#10a142]">2 more than last year</span>
+                  </div>
+                </div>
+                <div className="p-2 rounded-full bg-[#e8f5ff]">
+                  <BarChart3 className="h-6 w-6 text-[#0089ff]" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-3xl font-bold">300</p>
+                  <p className="text-sm text-muted-foreground">Total items</p>
+                  <div className="flex items-center mt-2">
+                    <ArrowUp className="h-4 w-4 text-[#10a142] mr-1" />
+                    <span className="text-xs text-[#10a142]">10 more than last year</span>
+                  </div>
+                </div>
+                <div className="p-2 rounded-full bg-[#fff8df]">
+                  <Package className="h-6 w-6 text-[#fdcc1c]" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-3xl font-bold">₹250M</p>
+                  <p className="text-sm text-muted-foreground">Total item cost</p>
+                  <div className="flex items-center mt-2">
+                    <ArrowDown className="h-4 w-4 text-[#ed3237] mr-1" />
+                    <span className="text-xs text-[#ed3237]">2.5% less than last year</span>
+                  </div>
+                </div>
+                <div className="p-2 rounded-full bg-[#f9efff]">
+                  <DollarSign className="h-6 w-6 text-[#a601ff]" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-3xl font-bold">20</p>
+                  <p className="text-sm text-muted-foreground">Total suppliers</p>
+                  <div className="flex items-center mt-2">
+                    <ArrowUp className="h-4 w-4 text-[#10a142] mr-1" />
+                    <span className="text-xs text-[#10a142]">2 more than last year</span>
+                  </div>
+                </div>
+                <div className="p-2 rounded-full bg-[#fff8df]">
+                  <Package className="h-6 w-6 text-[#fdcc1c]" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Inventory Value Trend</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={inventoryValueData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => [`₹${value.toLocaleString()}`, "Value"]} />
+                    <Legend />
+                    <Bar dataKey="value" name="Value (₹)" fill="#0089ff" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Inventory Categories</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={inventoryCategoryData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={true}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {inventoryCategoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [`${value} items`, "Quantity"]} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <h2 className="text-xl font-bold">Inventory Table</h2>
+          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+            {/* Search input with button */}
+            <div className="relative flex w-full md:w-80">
+              <Input
+                type="text"
+                placeholder="Search items..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pr-10"
+              />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-0 top-0 h-full"
+                onClick={() => {}} // The search is already reactive with the input change
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <Link href="/stocks-and-inventory/update-inventory">
+              <Button className="bg-[#0089ff] hover:bg-[#248cd8] w-full sm:w-auto">Add Inventory</Button>
+            </Link>
           </div>
         </div>
 
-        {activeTab === "stocks" ? (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-3xl font-bold">15</p>
-                      <p className="text-sm text-muted-foreground">Categories</p>
-                      <div className="flex items-center mt-2">
-                        <ArrowUp className="h-4 w-4 text-[#10a142] mr-1" />
-                        <span className="text-xs text-[#10a142]">2 more than last year</span>
-                      </div>
-                    </div>
-                    <div className="p-2 rounded-full bg-[#e8f5ff]">
-                      <BarChart3 className="h-6 w-6 text-[#0089ff]" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-3xl font-bold">800</p>
-                      <p className="text-sm text-muted-foreground">Total items</p>
-                      <div className="flex items-center mt-2">
-                        <ArrowUp className="h-4 w-4 text-[#10a142] mr-1" />
-                        <span className="text-xs text-[#10a142]">10 more than last year</span>
-                      </div>
-                    </div>
-                    <div className="p-2 rounded-full bg-[#fff8df]">
-                      <Package className="h-6 w-6 text-[#fdcc1c]" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-3xl font-bold">₹5M</p>
-                      <p className="text-sm text-muted-foreground">Total item cost</p>
-                      <div className="flex items-center mt-2">
-                        <ArrowDown className="h-4 w-4 text-[#ed3237] mr-1" />
-                        <span className="text-xs text-[#ed3237]">2.5% less than last year</span>
-                      </div>
-                    </div>
-                    <div className="p-2 rounded-full bg-[#f9efff]">
-                      <DollarSign className="h-6 w-6 text-[#a601ff]" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-3xl font-bold">200</p>
-                      <p className="text-sm text-muted-foreground">Items low in stock</p>
-                      <div className="flex items-center mt-2">
-                        <ArrowUp className="h-4 w-4 text-[#10a142] mr-1" />
-                        <span className="text-xs text-[#10a142]">20 more than last week</span>
-                      </div>
-                    </div>
-                    <div className="p-2 rounded-full bg-[#fff8df]">
-                      <AlertTriangle className="h-6 w-6 text-[#fdcc1c]" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Stock Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={stockStatusData}
-                        margin={{
-                          top: 20,
-                          right: 30,
-                          left: 20,
-                          bottom: 5,
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="value" name="Items" fill="#0089ff">
-                          {stockStatusData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Stock Categories</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={stockCategoryData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={true}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {stockCategoryData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => [`${value} items`, "Quantity"]} />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">Stock List</h2>
-              <Link href="/stocks-and-inventory/update">
-                <Button className="bg-[#0089ff] hover:bg-[#248cd8]">Update Stock</Button>
-              </Link>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-xs font-medium text-muted-foreground border-b">
-                    <th className="text-left py-3 px-4">S/N</th>
-                    <th className="text-left py-3 px-4">Image</th>
-                    <th className="text-left py-3 px-4">Product Name</th>
-                    <th className="text-left py-3 px-4">Product ID</th>
-                    <th className="text-left py-3 px-4">Category</th>
-                    <th className="text-left py-3 px-4">QTY Purchased</th>
-                    <th className="text-left py-3 px-4">Unit Price</th>
-                    <th className="text-left py-3 px-4">Total Amount</th>
-                    <th className="text-left py-3 px-4">In-Stock</th>
-                    <th className="text-left py-3 px-4">Supplier</th>
-                    <th className="text-left py-3 px-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stockItems.map((item) => (
-                    <tr key={item.id} className="border-b">
-                      <td className="py-4 px-4">{item.id}</td>
-                      <td className="py-4 px-4">
-                        <Image
-                          src={item.image || "/placeholder.svg"}
-                          alt={item.name}
-                          width={40}
-                          height={40}
-                          className="rounded"
-                        />
-                      </td>
-                      <td className="py-4 px-4">{item.name}</td>
-                      <td className="py-4 px-4">{item.productId}</td>
-                      <td className="py-4 px-4">{item.category}</td>
-                      <td className="py-4 px-4">{item.qtyPurchased}</td>
-                      <td className="py-4 px-4">{item.unitPrice}</td>
-                      <td className="py-4 px-4">{item.totalAmount}</td>
-                      <td className="py-4 px-4">{item.inStock}</td>
-                      <td className="py-4 px-4">{item.supplier}</td>
-                      <td className="py-4 px-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            item.status === "In stock"
-                              ? "bg-[#ecfff2] text-[#10a142]"
-                              : item.status === "Low in stock"
-                                ? "bg-[#fff8df] text-[#fdcc1c]"
-                                : "bg-[#ffe4e4] text-[#ed3237]"
-                          }`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
+        {loading ? (
+          <div className="text-center py-10 text-gray-500">Loading inventory...</div>
+        ) : error ? (
+          <div className="text-center py-10 text-red-500">{error}</div>
+        ) : filteredItems.length === 0 ? (
+          <div className="text-center py-10 text-gray-500">
+            {items.length === 0 ? "No inventory items found." : "No items match your search."}
+          </div>
         ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-3xl font-bold">10</p>
-                      <p className="text-sm text-muted-foreground">Categories</p>
-                      <div className="flex items-center mt-2">
-                        <ArrowUp className="h-4 w-4 text-[#10a142] mr-1" />
-                        <span className="text-xs text-[#10a142]">2 more than last year</span>
-                      </div>
-                    </div>
-                    <div className="p-2 rounded-full bg-[#e8f5ff]">
-                      <BarChart3 className="h-6 w-6 text-[#0089ff]" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-3xl font-bold">300</p>
-                      <p className="text-sm text-muted-foreground">Total items</p>
-                      <div className="flex items-center mt-2">
-                        <ArrowUp className="h-4 w-4 text-[#10a142] mr-1" />
-                        <span className="text-xs text-[#10a142]">10 more than last year</span>
-                      </div>
-                    </div>
-                    <div className="p-2 rounded-full bg-[#fff8df]">
-                      <Package className="h-6 w-6 text-[#fdcc1c]" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-3xl font-bold">₹250M</p>
-                      <p className="text-sm text-muted-foreground">Total item cost</p>
-                      <div className="flex items-center mt-2">
-                        <ArrowDown className="h-4 w-4 text-[#ed3237] mr-1" />
-                        <span className="text-xs text-[#ed3237]">2.5% less than last year</span>
-                      </div>
-                    </div>
-                    <div className="p-2 rounded-full bg-[#f9efff]">
-                      <DollarSign className="h-6 w-6 text-[#a601ff]" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-3xl font-bold">20</p>
-                      <p className="text-sm text-muted-foreground">Total suppliers</p>
-                      <div className="flex items-center mt-2">
-                        <ArrowUp className="h-4 w-4 text-[#10a142] mr-1" />
-                        <span className="text-xs text-[#10a142]">2 more than last year</span>
-                      </div>
-                    </div>
-                    <div className="p-2 rounded-full bg-[#fff8df]">
-                      <Package className="h-6 w-6 text-[#fdcc1c]" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Inventory Value Trend</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={inventoryValueData}
-                        margin={{
-                          top: 20,
-                          right: 30,
-                          left: 20,
-                          bottom: 5,
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip formatter={(value) => [`₹${value.toLocaleString()}`, "Value"]} />
-                        <Legend />
-                        <Bar dataKey="value" name="Value (₹)" fill="#0089ff" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Inventory Categories</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={inventoryCategoryData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={true}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {inventoryCategoryData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => [`${value} items`, "Quantity"]} />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">Inventory Table</h2>
-              <Link href="/stocks-and-inventory/update-inventory">
-                <Button className="bg-[#0089ff] hover:bg-[#248cd8]">Update Inventory</Button>
-              </Link>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-xs font-medium text-muted-foreground border-b">
-                    <th className="text-left py-3 px-4">S/N</th>
-                    <th className="text-left py-3 px-4">Image</th>
-                    <th className="text-left py-3 px-4">Product Name</th>
-                    <th className="text-left py-3 px-4">Product ID</th>
-                    <th className="text-left py-3 px-4">Category</th>
-                    <th className="text-left py-3 px-4">QTY Purchased</th>
-                    <th className="text-left py-3 px-4">Unit Price</th>
-                    <th className="text-left py-3 px-4">Total Amount</th>
-                    <th className="text-left py-3 px-4">Status</th>
-                    <th className="text-left py-3 px-4">Supplier</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inventoryItems.map((item) => (
-                    <tr key={item.id} className="border-b">
-                      <td className="py-4 px-4">{item.id}</td>
-                      <td className="py-4 px-4">
-                        <Image
-                          src={item.image || "/placeholder.svg"}
-                          alt={item.name}
-                          width={40}
-                          height={40}
-                          className="rounded"
-                        />
-                      </td>
-                      <td className="py-4 px-4">{item.name}</td>
-                      <td className="py-4 px-4">{item.productId}</td>
-                      <td className="py-4 px-4">{item.category}</td>
-                      <td className="py-4 px-4">{item.qtyPurchased}</td>
-                      <td className="py-4 px-4">{item.unitPrice}</td>
-                      <td className="py-4 px-4">{item.totalAmount}</td>
-                      <td className="py-4 px-4">{item.inStock}</td>
-                      <td className="py-4 px-4">{item.supplier}</td>
+          <div className="border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <div className="max-h-96 overflow-y-auto">
+                <table className="w-full">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="text-xs font-medium text-muted-foreground border-b bg-gray-50">
+                      <th className="text-left py-3 px-4 whitespace-nowrap">S/N</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Product Name</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Product ID</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Category</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">QTY</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Unit Price</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Total</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Status</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">In Stock</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Supplier</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Location</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filteredItems.map((item, index) => (
+                      <tr key={item.productId || index} className="border-b hover:bg-gray-50">
+                        <td className="py-4 px-4 whitespace-nowrap">{index + 1}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.name}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.productId}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.category || "—"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.qtyPurchased || "—"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.unitPrice || "—"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.totalAmount || "—"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.status || "?"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.inStock ?? 0}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.supplier || "—"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.location || "—"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <Link href={`/stocks-and-inventory/update-inventory?id=${item.id}`}>
+                                <DropdownMenuItem className="cursor-pointer">
+                                  <Edit className="h-4 w-4 mr-2 text-blue-500" />
+                                  <span>Update</span>
+                                </DropdownMenuItem>
+                              </Link>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                className="cursor-pointer text-red-500 focus:text-red-500" 
+                                onClick={() => handleDelete(item.id!)}
+                              >
+                                <Trash className="h-4 w-4 mr-2" />
+                                <span>Delete</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </>
+          </div>
         )}
 
         <div className="mt-8 text-center text-xs text-muted-foreground">
-          Copyright © 2022 Relia Energy. All Rights Reserved
+          Copyright © 2022 Delta Infosoft. All Rights Reserved
         </div>
       </div>
     </div>
