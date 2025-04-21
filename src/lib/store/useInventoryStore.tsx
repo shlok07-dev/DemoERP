@@ -25,11 +25,15 @@ type InventoryState = {
   error: string | null;
   fetchInventory: () => Promise<void>;
   addInventoryItem: (item: InventoryItem) => Promise<void>;
-  updateInventoryItem: (id: number, updatedItem: Partial<InventoryItem>) => Promise<void>;
-  deleteInventoryItem: (id: number) => Promise<void>;
+  updateInventoryItem: (
+    id: number,
+    updatedItem: Partial<InventoryItem>
+  ) => Promise<void>;
+  deleteInventoryItem: (id: number) => Promise<Object>;
+  restoreInventoryItem: (id: number) => Promise<Object>;
 };
 
-export const useInventoryStore = create<InventoryState>((set) => ({
+export const useInventoryStore = create<InventoryState>((set, get) => ({
   items: [],
   loading: false,
   error: null,
@@ -70,9 +74,13 @@ export const useInventoryStore = create<InventoryState>((set) => ({
   updateInventoryItem: async (id, updatedItem) => {
     set({ loading: true, error: null });
     try {
-      const response = await axios.patch(`/api/inventory/updateItem/${id}`, updatedItem, {
-        withCredentials: true,
-      });
+      const response = await axios.patch(
+        `/api/inventory/updateItem/${id}`,
+        updatedItem,
+        {
+          withCredentials: true,
+        }
+      );
       set((state) => ({
         items: state.items.map((item) =>
           item.id === id ? { ...item, ...response.data.item } : item
@@ -87,21 +95,58 @@ export const useInventoryStore = create<InventoryState>((set) => ({
     }
   },
 
-  deleteInventoryItem: async (id) => {
+  deleteInventoryItem: async (id: number): Promise<boolean> => {
     set({ loading: true, error: null });
     try {
+      // First update the local state to provide immediate feedback
+      set((state) => ({
+        items: state.items.filter((item) => item.id !== id),
+      }));
+
+      // Now actually delete the item from the backend
       await axios.delete(`/api/inventory/deleteItem/${id}`, {
         withCredentials: true,
       });
-      set((state) => ({
-        items: state.items.filter((item) => item.id !== id),
+
+      // Update loading state
+      set({ loading: false });
+
+      // Return true for success
+      return true;
+    } catch (error: any) {
+      // If there's an error, restore the item in the UI
+      await get().fetchInventory();
+
+      set({
+        error: error.response?.data?.message || error.message,
         loading: false,
-      }));
+      });
+
+      // Return false for failure
+      return false;
+    }
+  },
+
+  restoreInventoryItem: async (id: number): Promise<boolean> => {
+    set({ loading: true, error: null });
+    try {
+      await axios.post(`/api/inventory/restoreItem/${id}`, null, {
+        withCredentials: true,
+      });
+
+      // Refresh inventory to show the restored item
+      await get().fetchInventory();
+
+      // Return true for success
+      return true;
     } catch (error: any) {
       set({
         error: error.response?.data?.message || error.message,
         loading: false,
       });
+
+      // Return false for failure
+      return false;
     }
   },
 }));

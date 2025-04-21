@@ -48,6 +48,10 @@ export async function POST(
 
     await db.insert(inventory).values(restoredData);
 
+    await db
+      .delete(deletedInventory)
+      .where(eq(deletedInventory.originalId, deletedId));
+
     return Response.json({
       message: "Item restored successfully",
       status: 200,
