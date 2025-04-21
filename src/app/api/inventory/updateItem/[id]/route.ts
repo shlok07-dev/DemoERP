@@ -10,7 +10,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getUserFromRequest(request);
+    const user = await getUserFromRequest();
     if (!user) throw new Error("Unauthorized");
 
     // Only allow certain positions to update inventory

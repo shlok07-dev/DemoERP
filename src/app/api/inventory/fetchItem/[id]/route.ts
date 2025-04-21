@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getUserFromRequest(request);
+    const user = await getUserFromRequest();
     if (!user) throw new Error("Unauthorized");
 
     const itemId = Number.parseInt(params.id);

@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 // POST /api/inventory - Create a new inventory item
 export async function POST(request: Request) {
   try {
-    const user = await getUserFromRequest(request);
+    const user = await getUserFromRequest();
     if (!user) throw new Error("Unauthorized");
 
     // Only allow certain positions to create inventory items
@@ -25,9 +25,13 @@ export async function POST(request: Request) {
     }
 
     // Check if product ID already exists
-    const existingItem = await db.query.inventory.findFirst({
-      where: eq(inventory.productId, body.productId),
-    });
+    const existingItem =
+      (await db.query.inventory.findFirst({
+        where: eq(inventory.productId, body.productId),
+      })) ||
+      (await db.query.deletedInventory.findFirst({
+        where: eq(inventory.productId, body.productId),
+      }));
 
     if (existingItem) {
       throw new ApiError("Product ID already exists", 409);
