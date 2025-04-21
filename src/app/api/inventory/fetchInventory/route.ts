@@ -5,7 +5,7 @@ import { handleApiError } from "@/lib/utils";
 
 export async function GET(request: Request) {
   try {
-    const user = await getUserFromRequest(request);
+    const user = await getUserFromRequest();
     if (!user) throw new Error("Unauthorized");
 
     const items = await db.select().from(inventory);
