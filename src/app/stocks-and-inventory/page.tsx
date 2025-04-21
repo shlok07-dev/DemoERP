@@ -1,11 +1,13 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
-import { ArrowUp, ArrowDown, BarChart3, Package, DollarSign, Trash, Edit } from "lucide-react"
+import { ArrowUp, ArrowDown, BarChart3, Package, DollarSign, Trash, Edit, Search } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input" // Add Input import
+
 import {
   BarChart,
   Bar,
@@ -19,14 +21,44 @@ import {
   Pie,
   Cell,
 } from "recharts"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { MoreVertical } from "lucide-react"
 import { useInventoryStore } from "@/lib/store/useInventoryStore" // Adjust if needed
 
 export default function InventoryPage() {
   const { items, fetchInventory, loading, error, deleteInventoryItem } = useInventoryStore()
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filteredItems, setFilteredItems] = useState([])
 
   useEffect(() => {
     fetchInventory()
   }, [fetchInventory])
+
+  useEffect(() => {
+    // Filter items based on search term
+    if (items && items.length > 0) {
+      const filtered = items.filter(item => {
+        const searchTermLower = searchTerm.toLowerCase();
+        return (
+          (item.name && item.name.toLowerCase().includes(searchTermLower)) ||
+          (item.productId && item.productId.toString().toLowerCase().includes(searchTermLower)) ||
+          (item.category && item.category.toLowerCase().includes(searchTermLower)) ||
+          (item.supplier && item.supplier.toLowerCase().includes(searchTermLower)) ||
+          (item.location && item.location.toLowerCase().includes(searchTermLower))
+        );
+      });
+      setFilteredItems(filtered);
+    } else {
+      setFilteredItems([]);
+    }
+  }, [searchTerm, items]);
 
   const handleDelete = async (id: number) => {
     if (window.confirm("Are you sure you want to delete this item?")) {
@@ -190,83 +222,113 @@ export default function InventoryPage() {
           </Card>
         </div>
 
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <h2 className="text-xl font-bold">Inventory Table</h2>
-          <Link href="/stocks-and-inventory/update-inventory">
-            <Button className="bg-[#0089ff] hover:bg-[#248cd8]">Add Inventory</Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+            {/* Search input with button */}
+            <div className="relative flex w-full md:w-80">
+              <Input
+                type="text"
+                placeholder="Search items..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pr-10"
+              />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-0 top-0 h-full"
+                onClick={() => {}} // The search is already reactive with the input change
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <Link href="/stocks-and-inventory/update-inventory">
+              <Button className="bg-[#0089ff] hover:bg-[#248cd8] w-full sm:w-auto">Add Inventory</Button>
+            </Link>
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
-          {loading ? (
-            <div className="text-center py-10 text-gray-500">Loading inventory...</div>
-          ) : error ? (
-            <div className="text-center py-10 text-red-500">{error}</div>
-          ) : items.length === 0 ? (
-            <div className="text-center py-10 text-gray-500">No inventory items found.</div>
-          ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="text-xs font-medium text-muted-foreground border-b">
-                  <th className="text-left py-3 px-4">S/N</th>
-                  <th className="text-left py-3 px-4">Product Name</th>
-                  <th className="text-left py-3 px-4">Product ID</th>
-                  <th className="text-left py-3 px-4">Category</th>
-                  <th className="text-left py-3 px-4">QTY Purchased</th>
-                  <th className="text-left py-3 px-4">Unit Price</th>
-                  <th className="text-left py-3 px-4">Total Amount</th>
-                  <th className="text-left py-3 px-4">Status</th>
-                  <th className="text-left py-3 px-4">In Stock</th>
-                  <th className="text-left py-3 px-4">Supplier</th>
-                  <th className="text-left py-3 px-4">Location</th>
-                  <th className="text-left py-3 px-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item, index) => (
-                  <tr key={item.productId || index} className="border-b">
-                    <td className="py-4 px-4">{index + 1}</td>
-                    <td className="py-4 px-4">{item.name}</td>
-                    <td className="py-4 px-4">{item.productId}</td>
-                    <td className="py-4 px-4">{item.category || "—"}</td>
-                    <td className="py-4 px-4">{item.qtyPurchased || "—"}</td>
-                    <td className="py-4 px-4">{item.unitPrice || "—"}</td>
-                    <td className="py-4 px-4">{item.totalAmount || "—"}</td>
-                    <td className="py-4 px-4">{item.status || "?"}</td>
-                    <td className="py-4 px-4">{item.inStock ?? 0}</td>
-                    <td className="py-4 px-4">{item.supplier || "—"}</td>
-                    <td className="py-4 px-4">{item.location || "—"}</td>
-                    <td className="py-4 px-4 space-x-2">
-                      {/* Update button */}
-                      <Link href={`/stocks-and-inventory/update-inventory?id=${item.id}`}>
-                        <Button
-                          variant="outline"
-                          className="bg-blue-500 hover:bg-blue-600 text-white"
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Update
-                        </Button>
-                      </Link>
-                      
-                      {/* Delete button */}
-                      <Button
-                        variant="destructive"
-                        onClick={() => handleDelete(item.id!)}
-                        className="bg-red-500 hover:bg-red-600"
-                      >
-                        <Trash className="h-4 w-4 mr-2" />
-                        Delete
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        {loading ? (
+          <div className="text-center py-10 text-gray-500">Loading inventory...</div>
+        ) : error ? (
+          <div className="text-center py-10 text-red-500">{error}</div>
+        ) : filteredItems.length === 0 ? (
+          <div className="text-center py-10 text-gray-500">
+            {items.length === 0 ? "No inventory items found." : "No items match your search."}
+          </div>
+        ) : (
+          <div className="border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <div className="max-h-96 overflow-y-auto">
+                <table className="w-full">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="text-xs font-medium text-muted-foreground border-b bg-gray-50">
+                      <th className="text-left py-3 px-4 whitespace-nowrap">S/N</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Product Name</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Product ID</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Category</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">QTY</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Unit Price</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Total</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Status</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">In Stock</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Supplier</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Location</th>
+                      <th className="text-left py-3 px-4 whitespace-nowrap">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredItems.map((item, index) => (
+                      <tr key={item.productId || index} className="border-b hover:bg-gray-50">
+                        <td className="py-4 px-4 whitespace-nowrap">{index + 1}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.name}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.productId}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.category || "—"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.qtyPurchased || "—"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.unitPrice || "—"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.totalAmount || "—"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.status || "?"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.inStock ?? 0}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.supplier || "—"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.location || "—"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <Link href={`/stocks-and-inventory/update-inventory?id=${item.id}`}>
+                                <DropdownMenuItem className="cursor-pointer">
+                                  <Edit className="h-4 w-4 mr-2 text-blue-500" />
+                                  <span>Update</span>
+                                </DropdownMenuItem>
+                              </Link>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                className="cursor-pointer text-red-500 focus:text-red-500" 
+                                onClick={() => handleDelete(item.id!)}
+                              >
+                                <Trash className="h-4 w-4 mr-2" />
+                                <span>Delete</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="mt-8 text-center text-xs text-muted-foreground">
-          Copyright © 2022 Relia Energy. All Rights Reserved
+          Copyright © 2022 Delta Infosoft. All Rights Reserved
         </div>
       </div>
     </div>
