@@ -19,6 +19,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 import {
   BarChart,
@@ -34,12 +45,10 @@ import {
   Cell,
 } from "recharts";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { MoreVertical } from "lucide-react";
 import { useInventoryStore } from "@/lib/store/useInventoryStore";
 
@@ -70,13 +79,16 @@ export default function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
   const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [openPopoverId, setOpenPopoverId] = useState<number | null>(null);
 
+  // Fetch inventory on component mount
   useEffect(() => {
     fetchInventory();
   }, [fetchInventory]);
 
+  // Filter items when search term or items change
   useEffect(() => {
-    // Filter items based on search term
     if (items && items.length > 0) {
       const filtered = items.filter((item: InventoryItem) => {
         const searchTermLower = searchTerm.toLowerCase();
@@ -122,11 +134,16 @@ export default function InventoryPage() {
     return <span>{remainingTime}</span>;
   };
 
+  // Handle delete operation
   const handleDelete = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this item?")) {
+    try {
+      setIsDeleting(true);
       const success = await deleteInventoryItem(id);
 
       if (success) {
+        // Close the popover
+        setOpenPopoverId(null);
+
         // Show success toast with undo button and countdown component
         toast({
           title: "Item deleted",
@@ -170,6 +187,17 @@ export default function InventoryPage() {
           variant: "destructive",
         });
       }
+    } catch (err) {
+      console.error("Delete error:", err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      // Refresh inventory data after delete operation
+      fetchInventory();
     }
   };
 
@@ -560,8 +588,17 @@ export default function InventoryPage() {
                           {item.location || "—"}
                         </td>
                         <td className="py-4 px-4 whitespace-nowrap">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+                          <Popover
+                            open={openPopoverId === item.id}
+                            onOpenChange={(open) => {
+                              if (open) {
+                                setOpenPopoverId(item.id || null);
+                              } else {
+                                setOpenPopoverId(null);
+                              }
+                            }}
+                          >
+                            <PopoverTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -569,32 +606,67 @@ export default function InventoryPage() {
                               >
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              <Link
-                                href={`/stocks-and-inventory/update-inventory?id=${
-                                  item.id || ""
-                                }`}
-                              >
-                                <DropdownMenuItem className="cursor-pointer">
-                                  <Edit className="h-4 w-4 mr-2 text-blue-500" />
-                                  <span>Update</span>
-                                </DropdownMenuItem>
-                              </Link>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="cursor-pointer text-red-500 focus:text-red-500"
-                                onClick={() =>
-                                  item.id !== undefined
-                                    ? handleDelete(item.id)
-                                    : null
-                                }
-                              >
-                                <Trash className="h-4 w-4 mr-2" />
-                                <span>Delete</span>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-48 p-2">
+                              <div className="flex flex-col space-y-1">
+                                <Link
+                                  href={`/stocks-and-inventory/update-inventory?id=${
+                                    item.id || ""
+                                  }`}
+                                >
+                                  <Button
+                                    variant="ghost"
+                                    className="w-full justify-start text-left"
+                                  >
+                                    <Edit className="h-4 w-4 mr-2 text-blue-500" />
+                                    <span>Update</span>
+                                  </Button>
+                                </Link>
+
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      className="w-full justify-start text-left text-red-500 hover:text-red-500 hover:bg-red-50"
+                                    >
+                                      <Trash className="h-4 w-4 mr-2" />
+                                      <span>Delete</span>
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Are you sure?
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This action will delete{" "}
+                                        <strong>
+                                          {item.name || "this item"}
+                                        </strong>{" "}
+                                        from inventory. You can undo this action
+                                        within 10 seconds.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Cancel
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() =>
+                                          item.id !== undefined &&
+                                          handleDelete(item.id)
+                                        }
+                                        className="bg-red-500 hover:bg-red-600 focus:ring-red-500"
+                                        disabled={isDeleting}
+                                      >
+                                        {isDeleting ? "Deleting..." : "Delete"}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         </td>
                       </tr>
                     ))}
