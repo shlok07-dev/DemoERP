@@ -4,7 +4,7 @@ import { getUserFromRequest } from "@/lib/auth";
 import { ApiError, handleApiError } from "@/lib/utils";
 import { eq } from "drizzle-orm";
 
-// POST /api/inventory/restore/[id]
+// POST /api/inventory/restoreItem/[id]
 
 export async function POST(
   request: Request,
