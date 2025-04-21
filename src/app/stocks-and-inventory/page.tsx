@@ -4,9 +4,10 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
-import { ArrowUp, ArrowDown, BarChart3, Package, DollarSign, Trash, Edit, Search } from "lucide-react"
+import { ArrowUp, ArrowDown, BarChart3, Package, DollarSign, Trash, Edit, Search, Download } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input" // Add Input import
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/hooks/use-toast"
 
 import {
   BarChart,
@@ -25,17 +26,32 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { MoreVertical } from "lucide-react"
-import { useInventoryStore } from "@/lib/store/useInventoryStore" // Adjust if needed
+import { useInventoryStore } from "@/lib/store/useInventoryStore"
+
+// Define the type for inventory items
+interface InventoryItem {
+  id?: number
+  name?: string
+  productId?: string | number
+  category?: string
+  qtyPurchased?: number | string
+  unitPrice?: number | string
+  totalAmount?: number | string
+  status?: string
+  inStock?: number
+  supplier?: string
+  location?: string
+}
 
 export default function InventoryPage() {
   const { items, fetchInventory, loading, error, deleteInventoryItem } = useInventoryStore()
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filteredItems, setFilteredItems] = useState([])
+  const [searchTerm, setSearchTerm] = useState<string>("")
+  const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([])
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchInventory()
@@ -44,27 +60,95 @@ export default function InventoryPage() {
   useEffect(() => {
     // Filter items based on search term
     if (items && items.length > 0) {
-      const filtered = items.filter(item => {
-        const searchTermLower = searchTerm.toLowerCase();
+      const filtered = items.filter((item: InventoryItem) => {
+        const searchTermLower = searchTerm.toLowerCase()
         return (
           (item.name && item.name.toLowerCase().includes(searchTermLower)) ||
           (item.productId && item.productId.toString().toLowerCase().includes(searchTermLower)) ||
           (item.category && item.category.toLowerCase().includes(searchTermLower)) ||
           (item.supplier && item.supplier.toLowerCase().includes(searchTermLower)) ||
           (item.location && item.location.toLowerCase().includes(searchTermLower))
-        );
-      });
-      setFilteredItems(filtered);
+        )
+      })
+      setFilteredItems(filtered)
     } else {
-      setFilteredItems([]);
+      setFilteredItems([])
     }
-  }, [searchTerm, items]);
+  }, [searchTerm, items])
 
   const handleDelete = async (id: number) => {
     if (window.confirm("Are you sure you want to delete this item?")) {
-      await deleteInventoryItem(id);
+      toast({
+        title: "Success!",
+        description: "Inventory item is successfully deleted.",
+        variant: "destructive",
+      })
+      await deleteInventoryItem(id)
     }
-  };
+  }
+
+  // Function to export inventory data as CSV
+  const exportToCSV = () => {
+    // Define the headers for the CSV file
+    const headers = [
+      "S/N",
+      "Product Name",
+      "Product ID",
+      "Category",
+      "QTY",
+      "Unit Price",
+      "Total",
+      "Status",
+      "In Stock",
+      "Supplier",
+      "Location",
+    ]
+
+    // Create CSV content
+    let csvContent = headers.join(",") + "\n"
+
+    // Add data rows
+    filteredItems.forEach((item, index) => {
+      const row = [
+        index + 1,
+        item.name || "",
+        item.productId || "",
+        item.category || "",
+        item.qtyPurchased || "",
+        item.unitPrice || "",
+        item.totalAmount || "",
+        item.status || "",
+        item.inStock ?? 0,
+        item.supplier || "",
+        item.location || "",
+      ]
+
+      // Escape commas in fields by wrapping in quotes
+      const escapedRow = row.map((field) => {
+        const stringField = String(field)
+        return stringField.includes(",") ? `"${stringField}"` : stringField
+      })
+
+      csvContent += escapedRow.join(",") + "\n"
+    })
+
+    // Create a blob and download link
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.setAttribute("href", url)
+    link.setAttribute("download", `inventory_export_${new Date().toISOString().split("T")[0]}.csv`)
+    link.style.visibility = "hidden"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    toast({
+      title: "Export Successful",
+      description: "Inventory data has been exported to CSV",
+      variant: "default",
+    })
+  }
 
   const inventoryCategoryData = [
     { name: "Office Equipment", value: 35 },
@@ -87,10 +171,7 @@ export default function InventoryPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Inventory Management"
-        subtitle="Track, manage, and optimize your inventory assets"
-      />
+      <PageHeader title="Inventory Management" subtitle="Track, manage, and optimize your inventory assets" />
 
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -175,10 +256,7 @@ export default function InventoryPage() {
             <CardContent>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={inventoryValueData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
+                  <BarChart data={inventoryValueData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
@@ -234,16 +312,27 @@ export default function InventoryPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pr-10"
               />
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="absolute right-0 top-0 h-full"
                 onClick={() => {}} // The search is already reactive with the input change
               >
                 <Search className="h-4 w-4" />
               </Button>
             </div>
-            
+
+            {/* Export button */}
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto flex items-center gap-2"
+              onClick={exportToCSV}
+              disabled={filteredItems.length === 0}
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
+
             <Link href="/stocks-and-inventory/update-inventory">
               <Button className="bg-[#0089ff] hover:bg-[#248cd8] w-full sm:w-auto">Add Inventory</Button>
             </Link>
@@ -256,11 +345,11 @@ export default function InventoryPage() {
           <div className="text-center py-10 text-red-500">{error}</div>
         ) : filteredItems.length === 0 ? (
           <div className="text-center py-10 text-gray-500">
-            {items.length === 0 ? "No inventory items found." : "No items match your search."}
+            {items && items.length === 0 ? "No inventory items found." : "No items match your search."}
           </div>
         ) : (
           <div className="border rounded-lg overflow-hidden">
-            <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: "touch" }}>
               <div className="max-h-96 overflow-y-auto">
                 <table className="w-full">
                   <thead className="sticky top-0 z-10">
@@ -281,15 +370,15 @@ export default function InventoryPage() {
                   </thead>
                   <tbody>
                     {filteredItems.map((item, index) => (
-                      <tr key={item.productId || index} className="border-b hover:bg-gray-50">
+                      <tr key={`${item.productId || index}`} className="border-b hover:bg-gray-50">
                         <td className="py-4 px-4 whitespace-nowrap">{index + 1}</td>
-                        <td className="py-4 px-4 whitespace-nowrap">{item.name}</td>
-                        <td className="py-4 px-4 whitespace-nowrap">{item.productId}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.name || "—"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.productId || "—"}</td>
                         <td className="py-4 px-4 whitespace-nowrap">{item.category || "—"}</td>
                         <td className="py-4 px-4 whitespace-nowrap">{item.qtyPurchased || "—"}</td>
                         <td className="py-4 px-4 whitespace-nowrap">{item.unitPrice || "—"}</td>
                         <td className="py-4 px-4 whitespace-nowrap">{item.totalAmount || "—"}</td>
-                        <td className="py-4 px-4 whitespace-nowrap">{item.status || "?"}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">{item.status || "—"}</td>
                         <td className="py-4 px-4 whitespace-nowrap">{item.inStock ?? 0}</td>
                         <td className="py-4 px-4 whitespace-nowrap">{item.supplier || "—"}</td>
                         <td className="py-4 px-4 whitespace-nowrap">{item.location || "—"}</td>
@@ -301,16 +390,16 @@ export default function InventoryPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
-                              <Link href={`/stocks-and-inventory/update-inventory?id=${item.id}`}>
+                              <Link href={`/stocks-and-inventory/update-inventory?id=${item.id || ""}`}>
                                 <DropdownMenuItem className="cursor-pointer">
                                   <Edit className="h-4 w-4 mr-2 text-blue-500" />
                                   <span>Update</span>
                                 </DropdownMenuItem>
                               </Link>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                className="cursor-pointer text-red-500 focus:text-red-500" 
-                                onClick={() => handleDelete(item.id!)}
+                              <DropdownMenuItem
+                                className="cursor-pointer text-red-500 focus:text-red-500"
+                                onClick={() => (item.id !== undefined ? handleDelete(item.id) : null)}
                               >
                                 <Trash className="h-4 w-4 mr-2" />
                                 <span>Delete</span>
