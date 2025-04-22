@@ -1,47 +1,52 @@
-"use client";
+"use client"
 
-import type React from "react";
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
-import { useInventoryStore } from "@/lib/store/useInventoryStore";
+import type React from "react"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
+import { PageHeader } from "@/components/page-header"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { ArrowLeft } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
+import { useInventoryStore } from "@/lib/store/useInventoryStore"
+
+// Add this after the imports
+const noScrollInputStyles = `
+  /* Hide the spinner buttons for Chrome, Safari, Edge, Opera */
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Hide the spinner buttons for Firefox */
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+`
 
 export default function InventoryItemPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const itemId = searchParams.get("id");
-  const isUpdateMode = !!itemId;
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const itemId = searchParams.get("id")
+  const isUpdateMode = !!itemId
 
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [assetIdError, setAssetIdError] = useState("");
-  const [supplierContactError, setSupplierContactError] = useState("");
-  const [assetNameError, setAssetNameError] = useState("");
-  const [supplierNameError, setSupplierNameError] = useState("");
-  const [locationError, setLocationError] = useState("");
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [assetIdError, setAssetIdError] = useState("")
+  const [supplierContactError, setSupplierContactError] = useState("")
+  const [assetNameError, setAssetNameError] = useState("")
+  const [supplierNameError, setSupplierNameError] = useState("")
+  const [locationError, setLocationError] = useState("")
+  // Add a new state for in-stock error after the other error states
+  const [inStockError, setInStockError] = useState("")
 
-  const {
-    addInventoryItem,
-    updateInventoryItem,
-    items,
-    fetchInventory,
-    error,
-  } = useInventoryStore();
+  const { addInventoryItem, updateInventoryItem, items, fetchInventory, error } = useInventoryStore()
 
   const [formData, setFormData] = useState({
     name: "",
@@ -58,15 +63,15 @@ export default function InventoryItemPage() {
     minimumStockLevel: "",
     reorderPoint: "",
     location: "",
-  });
+  })
 
   useEffect(() => {
-    fetchInventory();
-  }, [fetchInventory]);
+    fetchInventory()
+  }, [fetchInventory])
 
   useEffect(() => {
     if (isUpdateMode && items.length > 0 && itemId) {
-      const itemToUpdate = items.find((item) => item.id === parseInt(itemId));
+      const itemToUpdate = items.find((item) => item.id === Number.parseInt(itemId))
       if (itemToUpdate) {
         setFormData({
           name: itemToUpdate.name || "",
@@ -83,23 +88,23 @@ export default function InventoryItemPage() {
           minimumStockLevel: itemToUpdate.minimumStockLevel?.toString() || "",
           reorderPoint: itemToUpdate.reorderPoint?.toString() || "",
           location: itemToUpdate.location || "",
-        });
+        })
       }
     }
-  }, [isUpdateMode, items, itemId]);
+  }, [isUpdateMode, items, itemId])
 
   useEffect(() => {
     if (formData.qtyPurchased && formData.unitPrice) {
-      const qty = parseFloat(formData.qtyPurchased);
-      const price = parseFloat(formData.unitPrice);
+      const qty = Number.parseFloat(formData.qtyPurchased)
+      const price = Number.parseFloat(formData.unitPrice)
       if (!isNaN(qty) && !isNaN(price)) {
         setFormData((prev) => ({
           ...prev,
           totalAmount: (qty * price).toFixed(2),
-        }));
+        }))
       }
     }
-  }, [formData.qtyPurchased, formData.unitPrice]);
+  }, [formData.qtyPurchased, formData.unitPrice])
 
   useEffect(() => {
     if (error) {
@@ -107,64 +112,60 @@ export default function InventoryItemPage() {
         title: "Error",
         description: error,
         variant: "destructive",
-      });
+      })
     }
-  }, [error, toast]);
+  }, [error, toast])
 
   const handleChange = (field: string, value: string) => {
     // Clear errors when fields are changed
     if (field === "productId") {
-      setAssetIdError("");
+      setAssetIdError("")
     }
     if (field === "supplierContact") {
-      setSupplierContactError("");
+      setSupplierContactError("")
     }
     if (field === "name") {
-      setAssetNameError("");
+      setAssetNameError("")
     }
     if (field === "supplier") {
-      setSupplierNameError("");
+      setSupplierNameError("")
     }
     if (field === "location") {
-      setLocationError("");
+      setLocationError("")
     }
-  
+    if (field === "inStock" || field === "qtyPurchased") {
+      setInStockError("")
+    }
+
     // Special handling for unit price - allow decimals with max 2 decimal places
     if (field === "unitPrice") {
       // Check if the input is a valid decimal with up to 2 decimal places
       if (/^\d*\.?\d{0,2}$/.test(value)) {
-        setFormData((prev) => ({ ...prev, [field]: value }));
+        setFormData((prev) => ({ ...prev, [field]: value }))
       }
-      return;
+      return
     }
-  
+
     // For other numeric fields, ensure they only contain digits (0-9)
-    if (
-      [
-        "qtyPurchased",
-        "inStock",
-        "minimumStockLevel",
-        "reorderPoint",
-      ].includes(field)
-    ) {
+    if (["qtyPurchased", "inStock", "minimumStockLevel", "reorderPoint"].includes(field)) {
       // Remove any non-digit characters
-      value = value.replace(/[^0-9]/g, "");
+      value = value.replace(/[^0-9]/g, "")
     }
-  
+
     // Enforce character limits
     if (["name", "supplier", "location"].includes(field) && value.length > 50) {
       if (field === "name") {
-        setAssetNameError("Asset name must be 50 characters or less");
+        setAssetNameError("Asset name must be 50 characters or less")
       } else if (field === "supplier") {
-        setSupplierNameError("Supplier name must be 50 characters or less");
+        setSupplierNameError("Supplier name must be 50 characters or less")
       } else if (field === "location") {
-        setLocationError("Location must be 50 characters or less");
+        setLocationError("Location must be 50 characters or less")
       }
-      return;
+      return
     }
-  
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Allow navigation keys
@@ -179,182 +180,177 @@ export default function InventoryItemPage() {
       e.key === "Home" ||
       e.key === "End"
     ) {
-      return;
+      return
     }
 
     // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-    if (
-      (e.ctrlKey || e.metaKey) &&
-      (e.key === "a" || e.key === "c" || e.key === "v" || e.key === "x")
-    ) {
-      return;
+    if ((e.ctrlKey || e.metaKey) && (e.key === "a" || e.key === "c" || e.key === "v" || e.key === "x")) {
+      return
     }
 
     // Prevent if not a digit for numeric fields
     if (!/^[0-9]$/.test(e.key)) {
-      e.preventDefault();
+      e.preventDefault()
     }
-  };
+  }
+
+  const preventScroll = (e: React.WheelEvent<HTMLInputElement>) => {
+    // Prevent the input value from changing on scroll
+    e.currentTarget.blur()
+  }
 
   const validateCharacterLimit = (field: string, value: string) => {
     if (value.length > 50) {
       if (field === "name") {
-        setAssetNameError("Asset name must be 50 characters or less");
-        return false;
+        setAssetNameError("Asset name must be 50 characters or less")
+        return false
       } else if (field === "supplier") {
-        setSupplierNameError("Supplier name must be 50 characters or less");
-        return false;
+        setSupplierNameError("Supplier name must be 50 characters or less")
+        return false
       } else if (field === "location") {
-        setLocationError("Location must be 50 characters or less");
-        return false;
+        setLocationError("Location must be 50 characters or less")
+        return false
       }
     }
-    return true;
-  };
+    return true
+  }
 
   const checkAssetIdExists = (productId: string) => {
-    return items.some((item) => item.productId.replace(/\s+/g, '').toLowerCase() === productId.replace(/\s+/g, '').toLowerCase());
-  };
+    return items.some(
+      (item) => item.productId.replace(/\s+/g, "").toLowerCase() === productId.replace(/\s+/g, "").toLowerCase(),
+    )
+  }
 
   const validateAssetId = () => {
-
     if (!formData.productId.trim()) {
-      setAssetIdError("Asset ID cannot be empty or contain only spaces");
-      return;
+      setAssetIdError("Asset ID cannot be empty or contain only spaces")
+      return
     }
-    if (
-      !isUpdateMode &&
-      formData.productId &&
-      checkAssetIdExists(formData.productId)
-    ) {
-      setAssetIdError(
-        "This Asset ID already exists. Please use a different ID."
-      );
+    if (!isUpdateMode && formData.productId && checkAssetIdExists(formData.productId)) {
+      setAssetIdError("This Asset ID already exists. Please use a different ID.")
     } else {
-      setAssetIdError("");
+      setAssetIdError("")
     }
-  };
+  }
 
   const validateSupplierContact = () => {
-    const contactNumber = formData.supplierContact.replace(/\D/g, ""); // Remove non-digit characters
+    const contactNumber = formData.supplierContact.replace(/\D/g, "") // Remove non-digit characters
     if (contactNumber.length !== 10 || isNaN(Number(contactNumber))) {
-      setSupplierContactError(
-        "Supplier contact number must be a 10-digit integer."
-      );
+      setSupplierContactError("Supplier contact number must be a 10-digit integer.")
     } else {
-      setSupplierContactError("");
+      setSupplierContactError("")
     }
-  };
+  }
+
+  // Add this validation function after the validateSupplierContact function
+  const validateInStock = () => {
+    if (formData.inStock && formData.qtyPurchased) {
+      const inStock = Number.parseInt(formData.inStock)
+      const qtyPurchased = Number.parseInt(formData.qtyPurchased)
+
+      if (inStock > qtyPurchased) {
+        setInStockError("In Stock cannot be greater than QTY purchased")
+        return false
+      } else {
+        setInStockError("")
+        return true
+      }
+    }
+    setInStockError("")
+    return true
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     // Validate character limits before submission
-    const isNameValid = validateCharacterLimit("name", formData.name);
-    const isSupplierValid = validateCharacterLimit("supplier", formData.supplier);
-    const isLocationValid = formData.location ? validateCharacterLimit("location", formData.location) : true;
+    const isNameValid = validateCharacterLimit("name", formData.name)
+    const isSupplierValid = validateCharacterLimit("supplier", formData.supplier)
+    const isLocationValid = formData.location ? validateCharacterLimit("location", formData.location) : true
+    const isInStockValid = validateInStock()
 
-    if (!isNameValid || !isSupplierValid || !isLocationValid) {
-      return;
+    if (!isNameValid || !isSupplierValid || !isLocationValid || !isInStockValid) {
+      return
     }
 
     if (!isUpdateMode && checkAssetIdExists(formData.productId)) {
-      setAssetIdError(
-        "This Asset ID already exists. Please use a different ID."
-      );
-      document
-        .getElementById("product-id")
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
+      setAssetIdError("This Asset ID already exists. Please use a different ID.")
+      document.getElementById("product-id")?.scrollIntoView({ behavior: "smooth", block: "center" })
+      return
     }
 
     if (supplierContactError) {
-      document
-        .getElementById("supplier-contact")
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
+      document.getElementById("supplier-contact")?.scrollIntoView({ behavior: "smooth", block: "center" })
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
 
     try {
       const inventoryItem = {
         ...formData,
-        qtyPurchased: formData.qtyPurchased
-          ? parseInt(formData.qtyPurchased)
-          : undefined,
-        unitPrice: formData.unitPrice
-          ? parseFloat(formData.unitPrice)
-          : undefined,
-        totalAmount: formData.totalAmount
-          ? parseFloat(formData.totalAmount)
-          : undefined,
+        qtyPurchased: formData.qtyPurchased ? Number.parseInt(formData.qtyPurchased) : undefined,
+        unitPrice: formData.unitPrice ? Number.parseFloat(formData.unitPrice) : undefined,
+        totalAmount: formData.totalAmount ? Number.parseFloat(formData.totalAmount) : undefined,
         inStock: isUpdateMode
           ? formData.inStock
-            ? parseInt(formData.inStock)
+            ? Number.parseInt(formData.inStock)
             : undefined
           : formData.qtyPurchased
-          ? parseInt(formData.qtyPurchased)
-          : undefined,
-        minimumStockLevel: formData.minimumStockLevel
-          ? parseInt(formData.minimumStockLevel)
-          : undefined,
-        reorderPoint: formData.reorderPoint
-          ? parseInt(formData.reorderPoint)
-          : undefined,
-      };
-
-      if (isUpdateMode && itemId) {
-        await updateInventoryItem(parseInt(itemId), inventoryItem);
-      } else {
-        await addInventoryItem(inventoryItem);
+            ? Number.parseInt(formData.qtyPurchased)
+            : undefined,
+        minimumStockLevel: formData.minimumStockLevel ? Number.parseInt(formData.minimumStockLevel) : undefined,
+        reorderPoint: formData.reorderPoint ? Number.parseInt(formData.reorderPoint) : undefined,
       }
 
-      setShowSuccessModal(true);
+      if (isUpdateMode && itemId) {
+        await updateInventoryItem(Number.parseInt(itemId), inventoryItem)
+      } else {
+        await addInventoryItem(inventoryItem)
+      }
+
+      setShowSuccessModal(true)
     } catch (err) {
       toast({
         title: "Error",
-        description: isUpdateMode
-          ? "Failed to update inventory item"
-          : "Failed to add inventory item",
+        description: isUpdateMode ? "Failed to update inventory item" : "Failed to add inventory item",
         variant: "destructive",
-      });
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleContinue = () => {
-    setShowSuccessModal(false);
-    router.push("/stocks-and-inventory");
-  };
+    setShowSuccessModal(false)
+    router.push("/stocks-and-inventory")
+  }
 
-  const pageTitle = isUpdateMode
-    ? "Update Inventory Asset"
-    : "Add Inventory Asset";
+  const pageTitle = isUpdateMode ? "Update Inventory Asset" : "Add Inventory Asset"
   const pageSubtitle = isUpdateMode
     ? "Update existing fixed assets in your inventory management system"
-    : "Register new fixed assets in your inventory management system";
+    : "Register new fixed assets in your inventory management system"
   const submitButtonText = loading
     ? isUpdateMode
       ? "Updating..."
       : "Adding..."
     : isUpdateMode
-    ? "Update Asset"
-    : "Add Asset";
+      ? "Update Asset"
+      : "Add Asset"
   const successMessage = isUpdateMode
     ? "Your inventory asset has been updated successfully."
-    : "Your inventory asset has been added successfully.";
+    : "Your inventory asset has been added successfully."
 
   return (
     <div>
+      {/* Add this style tag */}
+      <style jsx global>
+        {noScrollInputStyles}
+      </style>
       <PageHeader title={pageTitle} subtitle={pageSubtitle} />
 
       <div className="p-6 max-w-7xl mx-auto">
-        <Link
-          href="/stocks-and-inventory"
-          className="flex items-center text-sm text-[#0089ff] mb-6"
-        >
+        <Link href="/stocks-and-inventory" className="flex items-center text-sm text-[#0089ff] mb-6">
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Inventory
         </Link>
@@ -372,12 +368,8 @@ export default function InventoryItemPage() {
                 onBlur={() => validateCharacterLimit("name", formData.name)}
                 required
               />
-              {assetNameError && (
-                <p className="text-xs text-red-500 mt-1">{assetNameError}</p>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Maximum 50 characters
-              </p>
+              {assetNameError && <p className="text-xs text-red-500 mt-1">{assetNameError}</p>}
+              <p className="text-xs text-muted-foreground mt-1">Maximum 50 characters</p>
             </div>
 
             <div className="space-y-2">
@@ -393,30 +385,20 @@ export default function InventoryItemPage() {
                 className={isUpdateMode ? "bg-gray-100 cursor-not-allowed" : ""}
                 required
               />
-              {assetIdError && !isUpdateMode && (
-                <p className="text-xs text-red-500 mt-1">{assetIdError}</p>
-              )}
+              {assetIdError && !isUpdateMode && <p className="text-xs text-red-500 mt-1">{assetIdError}</p>}
               {isUpdateMode && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Asset ID cannot be changed during updates
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Asset ID cannot be changed during updates</p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => handleChange("category", value)}
-                required
-              >
+              <Select value={formData.category} onValueChange={(value) => handleChange("category", value)} required>
                 <SelectTrigger id="category">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="office-equipment">
-                    Office Equipment
-                  </SelectItem>
+                  <SelectItem value="office-equipment">Office Equipment</SelectItem>
                   <SelectItem value="electronics">Electronics</SelectItem>
                   <SelectItem value="furniture">Furniture</SelectItem>
                   <SelectItem value="automobile">Automobile</SelectItem>
@@ -434,6 +416,7 @@ export default function InventoryItemPage() {
                 value={formData.qtyPurchased}
                 onChange={(e) => handleChange("qtyPurchased", e.target.value)}
                 onKeyDown={handleKeyDown}
+                onWheel={preventScroll}
                 required
               />
             </div>
@@ -464,27 +447,24 @@ export default function InventoryItemPage() {
                   ) {
                     // If decimal point, only allow one in the field
                     if (e.key === "." && formData.unitPrice.includes(".")) {
-                      e.preventDefault();
+                      e.preventDefault()
                     }
-                    return;
+                    return
                   }
-            
+
                   // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-                  if (
-                    (e.ctrlKey || e.metaKey) &&
-                    (e.key === "a" || e.key === "c" || e.key === "v" || e.key === "x")
-                  ) {
-                    return;
+                  if ((e.ctrlKey || e.metaKey) && (e.key === "a" || e.key === "c" || e.key === "v" || e.key === "x")) {
+                    return
                   }
-            
+
                   // Prevent if not a digit
                   if (!/^[0-9]$/.test(e.key)) {
-                    e.preventDefault();
+                    e.preventDefault()
                   }
                 }}
+                onWheel={preventScroll}
                 required
               />
-               
             </div>
 
             <div className="space-y-2">
@@ -509,12 +489,8 @@ export default function InventoryItemPage() {
                 onBlur={() => validateCharacterLimit("supplier", formData.supplier)}
                 required
               />
-              {supplierNameError && (
-                <p className="text-xs text-red-500 mt-1">{supplierNameError}</p>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Maximum 50 characters
-              </p>
+              {supplierNameError && <p className="text-xs text-red-500 mt-1">{supplierNameError}</p>}
+              <p className="text-xs text-muted-foreground mt-1">Maximum 50 characters</p>
             </div>
 
             <div className="space-y-2">
@@ -523,28 +499,19 @@ export default function InventoryItemPage() {
                 id="supplier-contact"
                 placeholder="Enter supplier contact"
                 maxLength={10}
-                
                 value={formData.supplierContact}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, ""); // Remove non-digit characters
-                  handleChange("supplierContact", value); // Update the value with only digits
+                  const value = e.target.value.replace(/\D/g, "") // Remove non-digit characters
+                  handleChange("supplierContact", value) // Update the value with only digits
                 }}
                 onBlur={validateSupplierContact}
               />
-              {supplierContactError && (
-                <p className="text-xs text-red-500 mt-1">
-                  {supplierContactError}
-                </p>
-              )}
+              {supplierContactError && <p className="text-xs text-red-500 mt-1">{supplierContactError}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => handleChange("status", value)}
-                required
-              >
+              <Select value={formData.status} onValueChange={(value) => handleChange("status", value)} required>
                 <SelectTrigger id="status">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
@@ -564,15 +531,10 @@ export default function InventoryItemPage() {
                 value={formData.location}
                 onChange={(e) => handleChange("location", e.target.value)}
                 maxLength={50}
-               
                 onBlur={() => validateCharacterLimit("location", formData.location)}
               />
-              {locationError && (
-                <p className="text-xs text-red-500 mt-1">{locationError}</p>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Maximum 50 characters
-              </p>
+              {locationError && <p className="text-xs text-red-500 mt-1">{locationError}</p>}
+              <p className="text-xs text-muted-foreground mt-1">Maximum 50 characters</p>
             </div>
 
             {isUpdateMode && (
@@ -583,10 +545,15 @@ export default function InventoryItemPage() {
                   placeholder="Enter current stock"
                   type="number"
                   onKeyDown={handleKeyDown}
-                  min="10"
+                  onWheel={preventScroll}
+                  min="0"
+                  max={formData.qtyPurchased || undefined}
                   value={formData.inStock}
                   onChange={(e) => handleChange("inStock", e.target.value)}
+                  onBlur={validateInStock}
+                  className={inStockError ? "border-red-500" : ""}
                 />
+                {inStockError && <p className="text-xs text-red-500 mt-1">{inStockError}</p>}
               </div>
             )}
 
@@ -597,11 +564,10 @@ export default function InventoryItemPage() {
                 placeholder="Enter minimum stock level"
                 type="number"
                 onKeyDown={handleKeyDown}
+                onWheel={preventScroll}
                 min="1"
                 value={formData.minimumStockLevel}
-                onChange={(e) =>
-                  handleChange("minimumStockLevel", e.target.value)
-                }
+                onChange={(e) => handleChange("minimumStockLevel", e.target.value)}
               />
             </div>
 
@@ -612,6 +578,7 @@ export default function InventoryItemPage() {
                 placeholder="Enter reorder point"
                 type="number"
                 onKeyDown={handleKeyDown}
+                onWheel={preventScroll}
                 min="1"
                 value={formData.reorderPoint}
                 onChange={(e) => handleChange("reorderPoint", e.target.value)}
@@ -639,7 +606,8 @@ export default function InventoryItemPage() {
               supplierContactError !== "" ||
               assetNameError !== "" ||
               supplierNameError !== "" ||
-              locationError !== ""
+              locationError !== "" ||
+              inStockError !== ""
             }
           >
             {submitButtonText}
@@ -693,5 +661,5 @@ export default function InventoryItemPage() {
         </div>
       )}
     </div>
-  );
+  )
 }
