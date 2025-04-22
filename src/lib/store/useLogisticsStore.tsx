@@ -12,7 +12,7 @@ interface LogisticsState {
   vehicles: Vehicle[];
   deliveries: Delivery[];
   maintenanceSchedules: MaintenanceSchedule[];
-  loading: boolean;
+  isLoading: boolean;
   error: string | null;
 
   fetchVehicles: () => Promise<void>;
@@ -34,41 +34,41 @@ export const useLogisticsStore = create<LogisticsState>((set, get) => ({
   vehicles: [],
   deliveries: [],
   maintenanceSchedules: [],
-  loading: false,
+  isLoading: false,
   error: null,
 
   fetchVehicles: async () => {
-    set({ loading: true, error: null });
+    set({ isLoading: true, error: null });
     try {
       const res = await axios.get("/api/vehicle/fetchVehicles", {
         withCredentials: true,
       });
-      set({ vehicles: res.data, loading: false });
+      set({ vehicles: res.data, isLoading: false });
     } catch (error: any) {
       set({
         error: error.response?.data?.message || error.message,
-        loading: false,
+        isLoading: false,
       });
     }
   },
 
   fetchDeliveries: async () => {
-    set({ loading: true, error: null });
+    set({ isLoading: true, error: null });
     try {
       const res = await axios.get("/api/delivery/fetchDeliveries", {
         withCredentials: true,
       });
-      set({ deliveries: res.data, loading: false });
+      set({ deliveries: res.data, isLoading: false });
     } catch (error: any) {
       set({
         error: error.response?.data?.message || error.message,
-        loading: false,
+        isLoading: false,
       });
     }
   },
 
   fetchMaintenanceSchedules: async () => {
-    set({ loading: true, error: null });
+    set({ isLoading: true, error: null });
     try {
       const res = await axios.get(
         "/api/maintenanceSchedule/fetchMaintenanceSchedule",
@@ -76,53 +76,53 @@ export const useLogisticsStore = create<LogisticsState>((set, get) => ({
           withCredentials: true,
         }
       );
-      set({ maintenanceSchedules: res.data, loading: false });
+      set({ maintenanceSchedules: res.data, isLoading: false });
     } catch (error: any) {
       set({
         error: error.response?.data?.message || error.message,
-        loading: false,
+        isLoading: false,
       });
     }
   },
 
   addVehicle: async (vehicleData) => {
-    set({ loading: true, error: null });
+    set({ isLoading: true, error: null });
     try {
       const res = await axios.post("/api/vehicle/addVehicle", vehicleData, {
         withCredentials: true,
       });
       set((state) => ({
         vehicles: [...state.vehicles, res.data],
-        loading: false,
+        isLoading: false,
       }));
     } catch (error: any) {
       set({
         error: error.response?.data?.message || error.message,
-        loading: false,
+        isLoading: false,
       });
     }
   },
 
   addDelivery: async (deliveryData) => {
-    set({ loading: true, error: null });
+    set({ isLoading: true, error: null });
     try {
       const res = await axios.post("/api/delivery/addDelivery", deliveryData, {
         withCredentials: true,
       });
       set((state) => ({
         deliveries: [...state.deliveries, res.data],
-        loading: false,
+        isLoading: false,
       }));
     } catch (error: any) {
       set({
         error: error.response?.data?.message || error.message,
-        loading: false,
+        isLoading: false,
       });
     }
   },
 
   addMaintenanceSchedule: async (scheduleData) => {
-    set({ loading: true, error: null });
+    set({ isLoading: true, error: null });
     try {
       const res = await axios.post(
         "/api/maintenanceSchedule/addMaintenanceSchedule",
@@ -133,12 +133,12 @@ export const useLogisticsStore = create<LogisticsState>((set, get) => ({
       );
       set((state) => ({
         maintenanceSchedules: [...state.maintenanceSchedules, res.data],
-        loading: false,
+        isLoading: false,
       }));
     } catch (error: any) {
       set({
         error: error.response?.data?.message || error.message,
-        loading: false,
+        isLoading: false,
       });
     }
   },

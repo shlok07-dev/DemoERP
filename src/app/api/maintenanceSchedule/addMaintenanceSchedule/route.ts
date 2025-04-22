@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { maintenanceSchedule, vehicle } from "@/db/schema";
 import { getUserFromRequest } from "@/lib/auth";
 import { ApiError, handleApiError } from "@/lib/utils";
-import { eq } from "drizzle-orm";
+import { eq, InferInsertModel } from "drizzle-orm";
 
 // POST /api/maintenance-schedule - Create a new maintenance schedule
 export async function POST(request: Request) {
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       status,
     } = body;
 
-    if (!vehicleId || !scheduledDate || !maintenanceType) {
+    if (!vehicleId || !scheduledDate || !maintenanceType || !performedById) {
       throw new ApiError("Missing required fields", 400);
     }
 
@@ -49,12 +49,12 @@ export async function POST(request: Request) {
       throw new ApiError("Vehicle not found", 404);
     }
 
-    const insertData = {
+    const insertData: InferInsertModel<typeof maintenanceSchedule> = {
       vehicleId: parsedVehicleId,
       scheduledDate: new Date(scheduledDate),
       maintenanceType,
       description: description ?? null,
-      cost: cost ? Number(cost) : null,
+      cost: cost ?? null,
       vendor: vendor ?? null,
       performedById: performedById ? Number(performedById) : null,
       completionDate: completionDate ? new Date(completionDate) : null,
