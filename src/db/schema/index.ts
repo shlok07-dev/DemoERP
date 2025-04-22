@@ -9,4 +9,5 @@ export * from "./paymentVoucher";
 export * from "./tax";
 export * from "./vehicle";
 export * from "./maintenanceSchedule";
-export * from "./deletedInventory"
+export * from "./deletedInventory";
+export { auditLog } from "./auditLog";
