@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 
 import {
   BarChart3,
@@ -59,7 +59,7 @@ export function Sidebar({ className }: SidebarProps) {
   const { user, logout } = useAuthStore();
   console.log("user", user);
   const router = useRouter();
-  
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -95,22 +95,10 @@ export function Sidebar({ className }: SidebarProps) {
       active: pathname.startsWith("/payroll"),
     },
     {
-      label: "Memo",
+      label: "Communications",
       icon: Clipboard,
-      href: "/memo",
-      active: pathname.startsWith("/memo"),
-    },
-    {
-      label: "Circulars",
-      icon: FileIcon,
-      href: "/circulars",
-      active: pathname.startsWith("/circulars"),
-    },
-    {
-      label: "Maintenance",
-      icon: Wrench,
-      href: "/maintenance",
-      active: pathname.startsWith("/maintenance"),
+      href: "/communications",
+      active: pathname.startsWith("/communications"),
     },
     {
       label: "Logistics",
@@ -183,26 +171,32 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       </ScrollArea>
       <div className="px-3 pb-4 mt-auto">
-      <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="outline"
-          className="w-full justify-start text-sm text-grey-600 hover:bg-red-50 hover:text-sky-600"
-          ><X className="mr-2 h-4 w-4" />
-          Logout</Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
-          <AlertDialogDescription>
-          This will end your current session and log you out of your account. You can log back in at any time.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>No</AlertDialogCancel>
-          <AlertDialogAction onClick={handleLogout}>Yes</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full justify-start text-sm text-grey-600 hover:bg-red-50 hover:text-sky-600"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Are you sure you want to log out?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This will end your current session and log you out of your
+                account. You can log back in at any time.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>No</AlertDialogCancel>
+              <AlertDialogAction onClick={handleLogout}>Yes</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         {/* <Button
           variant="outline"
           className="w-full justify-start text-sm text-grey-600 hover:bg-red-50 hover:text-sky-600"

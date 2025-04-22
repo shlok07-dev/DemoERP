@@ -22,7 +22,6 @@ export const users = pgTable("user", {
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
-  accounts: many(accounts),
   payrolls: many(payroll, { relationName: "payroll_user" }),
   processedPayrolls: many(payroll, { relationName: "payroll_processed_by" }),
   approvedPayrolls: many(payroll, { relationName: "payroll_approved_by" }),
