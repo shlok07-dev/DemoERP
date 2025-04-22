@@ -31,6 +31,9 @@ export default function InventoryItemPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [assetIdError, setAssetIdError] = useState("");
   const [supplierContactError, setSupplierContactError] = useState("");
+  const [assetNameError, setAssetNameError] = useState("");
+  const [supplierNameError, setSupplierNameError] = useState("");
+  const [locationError, setLocationError] = useState("");
 
   const {
     addInventoryItem,
@@ -109,20 +112,116 @@ export default function InventoryItemPage() {
   }, [error, toast]);
 
   const handleChange = (field: string, value: string) => {
+    // Clear errors when fields are changed
     if (field === "productId") {
       setAssetIdError("");
     }
     if (field === "supplierContact") {
       setSupplierContactError("");
     }
+    if (field === "name") {
+      setAssetNameError("");
+    }
+    if (field === "supplier") {
+      setSupplierNameError("");
+    }
+    if (field === "location") {
+      setLocationError("");
+    }
+  
+    // Special handling for unit price - allow decimals with max 2 decimal places
+    if (field === "unitPrice") {
+      // Check if the input is a valid decimal with up to 2 decimal places
+      if (/^\d*\.?\d{0,2}$/.test(value)) {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+      }
+      return;
+    }
+  
+    // For other numeric fields, ensure they only contain digits (0-9)
+    if (
+      [
+        "qtyPurchased",
+        "inStock",
+        "minimumStockLevel",
+        "reorderPoint",
+      ].includes(field)
+    ) {
+      // Remove any non-digit characters
+      value = value.replace(/[^0-9]/g, "");
+    }
+  
+    // Enforce character limits
+    if (["name", "supplier", "location"].includes(field) && value.length > 50) {
+      if (field === "name") {
+        setAssetNameError("Asset name must be 50 characters or less");
+      } else if (field === "supplier") {
+        setSupplierNameError("Supplier name must be 50 characters or less");
+      } else if (field === "location") {
+        setLocationError("Location must be 50 characters or less");
+      }
+      return;
+    }
+  
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Allow navigation keys
+    if (
+      e.key === "Backspace" ||
+      e.key === "Delete" ||
+      e.key === "Tab" ||
+      e.key === "Escape" ||
+      e.key === "Enter" ||
+      e.key === "ArrowLeft" ||
+      e.key === "ArrowRight" ||
+      e.key === "Home" ||
+      e.key === "End"
+    ) {
+      return;
+    }
+
+    // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      (e.key === "a" || e.key === "c" || e.key === "v" || e.key === "x")
+    ) {
+      return;
+    }
+
+    // Prevent if not a digit for numeric fields
+    if (!/^[0-9]$/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  const validateCharacterLimit = (field: string, value: string) => {
+    if (value.length > 50) {
+      if (field === "name") {
+        setAssetNameError("Asset name must be 50 characters or less");
+        return false;
+      } else if (field === "supplier") {
+        setSupplierNameError("Supplier name must be 50 characters or less");
+        return false;
+      } else if (field === "location") {
+        setLocationError("Location must be 50 characters or less");
+        return false;
+      }
+    }
+    return true;
+  };
+
   const checkAssetIdExists = (productId: string) => {
-    return items.some((item) => item.productId === productId.trim());
+    return items.some((item) => item.productId.replace(/\s+/g, '').toLowerCase() === productId.replace(/\s+/g, '').toLowerCase());
   };
 
   const validateAssetId = () => {
+
+    if (!formData.productId.trim()) {
+      setAssetIdError("Asset ID cannot be empty or contain only spaces");
+      return;
+    }
     if (
       !isUpdateMode &&
       formData.productId &&
@@ -149,6 +248,15 @@ export default function InventoryItemPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate character limits before submission
+    const isNameValid = validateCharacterLimit("name", formData.name);
+    const isSupplierValid = validateCharacterLimit("supplier", formData.supplier);
+    const isLocationValid = formData.location ? validateCharacterLimit("location", formData.location) : true;
+
+    if (!isNameValid || !isSupplierValid || !isLocationValid) {
+      return;
+    }
 
     if (!isUpdateMode && checkAssetIdExists(formData.productId)) {
       setAssetIdError(
@@ -260,8 +368,16 @@ export default function InventoryItemPage() {
                 placeholder="Enter asset name"
                 value={formData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
+                maxLength={50}
+                onBlur={() => validateCharacterLimit("name", formData.name)}
                 required
               />
+              {assetNameError && (
+                <p className="text-xs text-red-500 mt-1">{assetNameError}</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Maximum 50 characters
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -314,8 +430,10 @@ export default function InventoryItemPage() {
                 id="quantity"
                 placeholder="Enter quantity"
                 type="number"
+                min="1"
                 value={formData.qtyPurchased}
                 onChange={(e) => handleChange("qtyPurchased", e.target.value)}
+                onKeyDown={handleKeyDown}
                 required
               />
             </div>
@@ -326,11 +444,47 @@ export default function InventoryItemPage() {
                 id="unit-price"
                 placeholder="Enter amount"
                 type="number"
+                min="1"
                 step="0.01"
                 value={formData.unitPrice}
                 onChange={(e) => handleChange("unitPrice", e.target.value)}
+                onKeyDown={(e) => {
+                  // Allow: backspace, delete, tab, escape, enter, decimal point, navigation
+                  if (
+                    e.key === "Backspace" ||
+                    e.key === "Delete" ||
+                    e.key === "Tab" ||
+                    e.key === "Escape" ||
+                    e.key === "Enter" ||
+                    e.key === "." ||
+                    e.key === "ArrowLeft" ||
+                    e.key === "ArrowRight" ||
+                    e.key === "Home" ||
+                    e.key === "End"
+                  ) {
+                    // If decimal point, only allow one in the field
+                    if (e.key === "." && formData.unitPrice.includes(".")) {
+                      e.preventDefault();
+                    }
+                    return;
+                  }
+            
+                  // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                  if (
+                    (e.ctrlKey || e.metaKey) &&
+                    (e.key === "a" || e.key === "c" || e.key === "v" || e.key === "x")
+                  ) {
+                    return;
+                  }
+            
+                  // Prevent if not a digit
+                  if (!/^[0-9]$/.test(e.key)) {
+                    e.preventDefault();
+                  }
+                }}
                 required
               />
+               
             </div>
 
             <div className="space-y-2">
@@ -351,8 +505,16 @@ export default function InventoryItemPage() {
                 placeholder="Enter supplier name"
                 value={formData.supplier}
                 onChange={(e) => handleChange("supplier", e.target.value)}
+                maxLength={50}
+                onBlur={() => validateCharacterLimit("supplier", formData.supplier)}
                 required
               />
+              {supplierNameError && (
+                <p className="text-xs text-red-500 mt-1">{supplierNameError}</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Maximum 50 characters
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -360,6 +522,8 @@ export default function InventoryItemPage() {
               <Input
                 id="supplier-contact"
                 placeholder="Enter supplier contact"
+                maxLength={10}
+                
                 value={formData.supplierContact}
                 onChange={(e) => {
                   const value = e.target.value.replace(/\D/g, ""); // Remove non-digit characters
@@ -399,7 +563,16 @@ export default function InventoryItemPage() {
                 placeholder="Enter location"
                 value={formData.location}
                 onChange={(e) => handleChange("location", e.target.value)}
+                maxLength={50}
+               
+                onBlur={() => validateCharacterLimit("location", formData.location)}
               />
+              {locationError && (
+                <p className="text-xs text-red-500 mt-1">{locationError}</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Maximum 50 characters
+              </p>
             </div>
 
             {isUpdateMode && (
@@ -409,6 +582,8 @@ export default function InventoryItemPage() {
                   id="in-stock"
                   placeholder="Enter current stock"
                   type="number"
+                  onKeyDown={handleKeyDown}
+                  min="10"
                   value={formData.inStock}
                   onChange={(e) => handleChange("inStock", e.target.value)}
                 />
@@ -421,6 +596,8 @@ export default function InventoryItemPage() {
                 id="minimum-stock"
                 placeholder="Enter minimum stock level"
                 type="number"
+                onKeyDown={handleKeyDown}
+                min="1"
                 value={formData.minimumStockLevel}
                 onChange={(e) =>
                   handleChange("minimumStockLevel", e.target.value)
@@ -434,6 +611,8 @@ export default function InventoryItemPage() {
                 id="reorder-point"
                 placeholder="Enter reorder point"
                 type="number"
+                onKeyDown={handleKeyDown}
+                min="1"
                 value={formData.reorderPoint}
                 onChange={(e) => handleChange("reorderPoint", e.target.value)}
               />
@@ -457,7 +636,10 @@ export default function InventoryItemPage() {
             disabled={
               loading ||
               (!isUpdateMode && assetIdError !== "") ||
-              supplierContactError !== ""
+              supplierContactError !== "" ||
+              assetNameError !== "" ||
+              supplierNameError !== "" ||
+              locationError !== ""
             }
           >
             {submitButtonText}
@@ -475,7 +657,21 @@ export default function InventoryItemPage() {
             <div className="mb-6 flex justify-center">
               <div className="relative h-24 w-24 flex items-center justify-center">
                 <div className="absolute inset-0 bg-green-100 rounded-full"></div>
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                <svg
+                  width="64"
+                  height="64"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="z-10"
+                >
+                  <path
+                    d="M22 11.0857V12.0057C21.9988 14.1621 21.3005 16.2604 20.0093 17.9875C18.7182 19.7147 16.9033 20.9782 14.8354 21.5896C12.7674 22.201 10.5573 22.1276 8.53447 21.3803C6.51168 20.633 4.78465 19.2518 3.61096 17.4428C2.43727 15.6338 1.87979 13.4938 2.02168 11.342C2.16356 9.19029 2.99721 7.14205 4.39828 5.5028C5.79935 3.86354 7.69279 2.72111 9.79619 2.24587C11.8996 1.77063 14.1003 1.98806 16.07 2.86572"
+                    stroke="#22c55e"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                   <path
                     d="M22 4L12 14.01L9 11.01"
                     stroke="#22c55e"
@@ -486,12 +682,11 @@ export default function InventoryItemPage() {
                 </svg>
               </div>
             </div>
+
             <h2 className="text-2xl font-bold mb-2">Congratulations</h2>
-            <p className="text-gray-600 mb-6">{successMessage}</p>
-            <Button
-              onClick={handleContinue}
-              className="w-full h-12 rounded-md bg-[#0089ff] hover:bg-[#248cd8]"
-            >
+            <p className="text-gray-600 mb-6">Your inventory asset has been added successfully.</p>
+
+            <Button onClick={handleContinue} className="w-full h-12 rounded-md bg-[#0089ff] hover:bg-[#248cd8]">
               Ok
             </Button>
           </div>
