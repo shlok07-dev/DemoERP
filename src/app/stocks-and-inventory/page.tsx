@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -137,9 +137,13 @@ export default function InventoryPage() {
 
   // Function to toggle item selection
   const toggleItemSelection = (id: number) => {
-    setSelectedItems((prev) =>
-      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
-    );
+    if (id !== undefined) {
+      setSelectedItems((prev) =>
+        prev.includes(id)
+          ? prev.filter((itemId) => itemId !== id)
+          : [...prev, id]
+      );
+    }
   };
 
   // Function to select all items
@@ -188,10 +192,25 @@ export default function InventoryPage() {
     }, 800);
   };
 
-  // Function to generate a random color based on category
-  const getCategoryColor = () => {
-    return "#0089ff"; // Use a consistent blue color
+  // Function to generate a color based on category
+  const getCategoryColor = (category?: string): string => {
+    if (!category) return "#0089ff"; // Default blue color
+
+    // Map categories to specific colors
+    switch (category.toLowerCase()) {
+      case "office equipment":
+        return "#0089ff"; // Blue
+      case "electronics":
+        return "#00C49F"; // Teal
+      case "furniture":
+        return "#FFBB28"; // Yellow/Gold
+      case "automobiles":
+        return "#FF8042"; // Orange
+      default:
+        return "#a601ff"; // Purple for other categories
+    }
   };
+
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [openPopoverId, setOpenPopoverId] = useState<number | null>(null);
 
@@ -225,6 +244,96 @@ export default function InventoryPage() {
       setFilteredItems([]);
     }
   }, [searchTerm, items]);
+
+  // Generate real data for charts based on actual inventory
+  const inventoryStats = useMemo(() => {
+    if (!filteredItems || filteredItems.length === 0) {
+      return {
+        totalCategories: 0,
+        totalItems: 0,
+        totalCost: 0,
+        totalSuppliers: 0,
+        categoryData: [],
+        monthlyValueData: [],
+      };
+    }
+
+    // Count unique categories
+    const categories = new Set<string>();
+    const suppliers = new Set<string>();
+    let totalCost = 0;
+
+    filteredItems.forEach((item) => {
+      if (item.category) categories.add(item.category);
+      if (item.supplier) suppliers.add(item.supplier);
+
+      // Calculate total cost
+      const itemCost =
+        Number(item.totalAmount) ||
+        Number(item.unitPrice) * (Number(item.qtyPurchased) || 1) ||
+        0;
+      totalCost += itemCost;
+    });
+
+    // Generate category distribution data
+    const categoryMap = new Map<string, number>();
+    filteredItems.forEach((item) => {
+      if (item.category) {
+        const count = categoryMap.get(item.category) || 0;
+        categoryMap.set(item.category, count + 1);
+      }
+    });
+
+    const categoryData = Array.from(categoryMap.entries()).map(
+      ([name, value]) => ({ name, value })
+    );
+
+    // Sort by value descending and limit to top 5
+    categoryData.sort((a, b) => b.value - a.value);
+    const topCategories = categoryData.slice(0, 5);
+
+    // Generate monthly value data (simulated based on current data)
+    const currentMonth = new Date().getMonth();
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    const monthlyValueData = [];
+    for (let i = 0; i < 6; i++) {
+      const monthIndex = (currentMonth - 5 + i + 12) % 12;
+      const monthName = monthNames[monthIndex];
+
+      // Generate a value that increases over time with some randomness
+      // Base it on the actual total cost
+      const factor = 0.8 + i * 0.05 + Math.random() * 0.1;
+      const value = Math.round(totalCost * factor);
+
+      monthlyValueData.push({
+        name: monthName,
+        value,
+      });
+    }
+
+    return {
+      totalCategories: categories.size,
+      totalItems: filteredItems.length,
+      totalCost,
+      totalSuppliers: suppliers.size,
+      categoryData: topCategories,
+      monthlyValueData,
+    };
+  }, [filteredItems]);
 
   // Component for countdown display
   const CountdownDisplay = ({ initialTime }: { initialTime: number }) => {
@@ -383,23 +492,6 @@ export default function InventoryPage() {
     });
   };
 
-  const inventoryCategoryData = [
-    { name: "Office Equipment", value: 35 },
-    { name: "Electronics", value: 25 },
-    { name: "Furniture", value: 20 },
-    { name: "Automobiles", value: 15 },
-    { name: "Others", value: 5 },
-  ];
-
-  const inventoryValueData = [
-    { name: "Jan", value: 200000 },
-    { name: "Feb", value: 220000 },
-    { name: "Mar", value: 240000 },
-    { name: "Apr", value: 260000 },
-    { name: "May", value: 280000 },
-    { name: "Jun", value: 300000 },
-  ];
-
   const COLORS = ["#0089ff", "#00C49F", "#FFBB28", "#FF8042", "#a601ff"];
 
   return (
@@ -409,13 +501,15 @@ export default function InventoryPage() {
         subtitle="Track, manage, and optimize your inventory assets"
       />
 
-      <div className="p-6">
+      <div className="p-6 max-w-full overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-3xl font-bold">10</p>
+                  <p className="text-3xl font-bold">
+                    {inventoryStats.totalCategories || 0}
+                  </p>
                   <p className="text-sm text-muted-foreground">Categories</p>
                   <div className="flex items-center mt-2">
                     <ArrowUp className="h-4 w-4 text-[#10a142] mr-1" />
@@ -435,7 +529,9 @@ export default function InventoryPage() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-3xl font-bold">300</p>
+                  <p className="text-3xl font-bold">
+                    {inventoryStats.totalItems || 0}
+                  </p>
                   <p className="text-sm text-muted-foreground">Total items</p>
                   <div className="flex items-center mt-2">
                     <ArrowUp className="h-4 w-4 text-[#10a142] mr-1" />
@@ -455,7 +551,9 @@ export default function InventoryPage() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-3xl font-bold">₹250M</p>
+                  <p className="text-3xl font-bold">
+                    ₹{(inventoryStats.totalCost / 1000000).toFixed(1)}M
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     Total item cost
                   </p>
@@ -477,7 +575,9 @@ export default function InventoryPage() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-3xl font-bold">20</p>
+                  <p className="text-3xl font-bold">
+                    {inventoryStats.totalSuppliers || 0}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     Total suppliers
                   </p>
@@ -505,7 +605,7 @@ export default function InventoryPage() {
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={inventoryValueData}
+                    data={inventoryStats.monthlyValueData}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
@@ -534,7 +634,7 @@ export default function InventoryPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={inventoryCategoryData}
+                      data={inventoryStats.categoryData}
                       cx="50%"
                       cy="50%"
                       labelLine={true}
@@ -545,7 +645,7 @@ export default function InventoryPage() {
                       fill="#8884d8"
                       dataKey="value"
                     >
-                      {inventoryCategoryData.map((entry, index) => (
+                      {inventoryStats.categoryData.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
                           fill={COLORS[index % COLORS.length]}
@@ -565,7 +665,7 @@ export default function InventoryPage() {
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <h2 className="text-xl font-bold">Inventory Table</h2>
-          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto flex-wrap">
             {/* View toggle buttons */}
             <div className="flex rounded-md overflow-hidden border">
               <Button
@@ -589,7 +689,7 @@ export default function InventoryPage() {
             </div>
 
             {/* Search input with button */}
-            <div className="relative flex w-full md:w-80">
+            <div className="relative flex w-full sm:w-auto sm:flex-1 min-w-[200px]">
               <Input
                 type="text"
                 placeholder="Search items..."
@@ -615,7 +715,8 @@ export default function InventoryPage() {
               disabled={filteredItems.length === 0}
             >
               <Download className="h-4 w-4" />
-              Export CSV
+              <span className="hidden sm:inline">Export CSV</span>
+              <span className="sm:hidden">Export</span>
             </Button>
 
             {/* Bulk delete button - only show when items are selected */}
@@ -630,7 +731,12 @@ export default function InventoryPage() {
                     className="w-full sm:w-auto flex items-center gap-2"
                   >
                     <Trash className="h-4 w-4" />
-                    Delete ({selectedItems.length})
+                    <span className="hidden sm:inline">
+                      Delete ({selectedItems.length})
+                    </span>
+                    <span className="sm:hidden">
+                      Delete {selectedItems.length}
+                    </span>
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -657,8 +763,11 @@ export default function InventoryPage() {
               </AlertDialog>
             )}
 
-            <Link href="/stocks-and-inventory/update-inventory">
-              <Button className="bg-[#0089ff] hover:bg-[#248cd8] w-full sm:w-auto">
+            <Link
+              href="/stocks-and-inventory/update-inventory"
+              className="w-full sm:w-auto"
+            >
+              <Button className="bg-[#0089ff] hover:bg-[#248cd8] w-full">
                 Add Inventory
               </Button>
             </Link>
@@ -680,14 +789,14 @@ export default function InventoryPage() {
         ) : viewMode === "table" ? (
           <div className="border rounded-lg overflow-hidden">
             <div
-              className="overflow-x-auto"
-              style={{ WebkitOverflowScrolling: "touch" }}
+              className="overflow-x-auto w-full"
+              style={{ WebkitOverflowScrolling: "touch", maxWidth: "100%" }}
             >
-              <div className="max-h-96 overflow-y-auto">
-                <table className="w-full">
-                  <thead className="sticky top-0 z-10">
+              <div className="max-h-[calc(100vh-350px)] min-h-[300px] overflow-y-auto">
+                <table className="w-full table-auto border-collapse">
+                  <thead className="sticky top-0 z-20">
                     <tr className="text-xs font-medium text-muted-foreground border-b bg-gray-50">
-                      <th className="text-left py-3 px-4 whitespace-nowrap">
+                      <th className="text-left py-3 px-2 md:px-4 whitespace-nowrap sticky left-0 bg-gray-50 z-30">
                         <input
                           type="checkbox"
                           checked={
@@ -702,90 +811,140 @@ export default function InventoryPage() {
                           aria-label="Select all items"
                         />
                       </th>
-                      <th className="text-left py-3 px-4 whitespace-nowrap">
+                      <th className="text-left py-3 px-2 md:px-4 whitespace-nowrap sticky left-8 bg-gray-50 z-30">
                         S/N
                       </th>
                       <th
-                        className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
+                        className="text-left py-3 px-2 md:px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100 min-w-[150px]"
                         onClick={() => requestSort("name")}
                       >
-                        Product Name{" "}
-                        {sortConfig?.key === "name" &&
-                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        <div className="flex items-center">
+                          <span>Product Name</span>
+                          {sortConfig?.key === "name" && (
+                            <span className="ml-1">
+                              {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
                       </th>
                       <th
-                        className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
+                        className="text-left py-3 px-2 md:px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100 hidden sm:table-cell"
                         onClick={() => requestSort("productId")}
                       >
-                        Product ID{" "}
-                        {sortConfig?.key === "productId" &&
-                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        <div className="flex items-center">
+                          <span>Product ID</span>
+                          {sortConfig?.key === "productId" && (
+                            <span className="ml-1">
+                              {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
                       </th>
                       <th
-                        className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
+                        className="text-left py-3 px-2 md:px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
                         onClick={() => requestSort("category")}
                       >
-                        Category{" "}
-                        {sortConfig?.key === "category" &&
-                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        <div className="flex items-center">
+                          <span>Category</span>
+                          {sortConfig?.key === "category" && (
+                            <span className="ml-1">
+                              {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
                       </th>
                       <th
-                        className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
+                        className="text-left py-3 px-2 md:px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100 hidden md:table-cell"
                         onClick={() => requestSort("qtyPurchased")}
                       >
-                        QTY{" "}
-                        {sortConfig?.key === "qtyPurchased" &&
-                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        <div className="flex items-center">
+                          <span>QTY</span>
+                          {sortConfig?.key === "qtyPurchased" && (
+                            <span className="ml-1">
+                              {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
                       </th>
                       <th
-                        className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
+                        className="text-left py-3 px-2 md:px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100 hidden md:table-cell"
                         onClick={() => requestSort("unitPrice")}
                       >
-                        Unit Price{" "}
-                        {sortConfig?.key === "unitPrice" &&
-                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        <div className="flex items-center">
+                          <span>Unit Price</span>
+                          {sortConfig?.key === "unitPrice" && (
+                            <span className="ml-1">
+                              {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
                       </th>
                       <th
-                        className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
+                        className="text-left py-3 px-2 md:px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100 hidden lg:table-cell"
                         onClick={() => requestSort("totalAmount")}
                       >
-                        Total{" "}
-                        {sortConfig?.key === "totalAmount" &&
-                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        <div className="flex items-center">
+                          <span>Total</span>
+                          {sortConfig?.key === "totalAmount" && (
+                            <span className="ml-1">
+                              {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
                       </th>
                       <th
-                        className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
+                        className="text-left py-3 px-2 md:px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
                         onClick={() => requestSort("status")}
                       >
-                        Status{" "}
-                        {sortConfig?.key === "status" &&
-                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        <div className="flex items-center">
+                          <span>Status</span>
+                          {sortConfig?.key === "status" && (
+                            <span className="ml-1">
+                              {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
                       </th>
                       <th
-                        className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
+                        className="text-left py-3 px-2 md:px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100 hidden sm:table-cell"
                         onClick={() => requestSort("inStock")}
                       >
-                        In Stock{" "}
-                        {sortConfig?.key === "inStock" &&
-                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        <div className="flex items-center">
+                          <span>In Stock</span>
+                          {sortConfig?.key === "inStock" && (
+                            <span className="ml-1">
+                              {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
                       </th>
                       <th
-                        className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
+                        className="text-left py-3 px-2 md:px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100 hidden lg:table-cell"
                         onClick={() => requestSort("supplier")}
                       >
-                        Supplier{" "}
-                        {sortConfig?.key === "supplier" &&
-                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        <div className="flex items-center">
+                          <span>Supplier</span>
+                          {sortConfig?.key === "supplier" && (
+                            <span className="ml-1">
+                              {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
                       </th>
                       <th
-                        className="text-left py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100"
+                        className="text-left py-3 px-2 md:px-4 whitespace-nowrap cursor-pointer hover:bg-gray-100 hidden lg:table-cell"
                         onClick={() => requestSort("location")}
                       >
-                        Location{" "}
-                        {sortConfig?.key === "location" &&
-                          (sortConfig.direction === "ascending" ? "↑" : "↓")}
+                        <div className="flex items-center">
+                          <span>Location</span>
+                          {sortConfig?.key === "location" && (
+                            <span className="ml-1">
+                              {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
                       </th>
-                      <th className="text-left py-3 px-4 whitespace-nowrap">
+                      <th className="text-left py-3 px-2 md:px-4 whitespace-nowrap sticky right-0 bg-gray-50 z-30">
                         Actions
                       </th>
                     </tr>
@@ -807,7 +966,7 @@ export default function InventoryPage() {
                             : ""
                         }`}
                       >
-                        <td className="py-4 px-4 whitespace-nowrap">
+                        <td className="py-2 md:py-3 px-2 md:px-4 whitespace-nowrap sticky left-0 bg-white z-10">
                           {item.id !== undefined && (
                             <input
                               type="checkbox"
@@ -824,36 +983,43 @@ export default function InventoryPage() {
                             />
                           )}
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">
+                        <td className="py-2 md:py-3 px-2 md:px-4 whitespace-nowrap sticky left-8 bg-white z-10">
                           {index + 1}
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">
-                          {item.name || "-"}
+                        <td className="py-2 md:py-3 px-2 md:px-4">
+                          <div className="truncate max-w-[120px] md:max-w-[200px] lg:max-w-[250px]">
+                            {item.name || "-"}
+                          </div>
+                          <div className="text-xs text-muted-foreground sm:hidden mt-1">
+                            ID: {item.productId || "-"}
+                          </div>
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">
+                        <td className="py-2 md:py-3 px-2 md:px-4 whitespace-nowrap hidden sm:table-cell">
                           {item.productId || "-"}
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">
+                        <td className="py-2 md:py-3 px-2 md:px-4 whitespace-nowrap">
                           <span
                             className="px-2 py-1 rounded-full text-xs font-medium"
                             style={{
-                              backgroundColor: `${getCategoryColor()}20`,
-                              color: getCategoryColor(),
+                              backgroundColor: `${getCategoryColor(
+                                item.category
+                              )}20`,
+                              color: getCategoryColor(item.category),
                             }}
                           >
                             {item.category || "-"}
                           </span>
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">
+                        <td className="py-2 md:py-3 px-2 md:px-4 whitespace-nowrap hidden md:table-cell">
                           {item.qtyPurchased || "-"}
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">
+                        <td className="py-2 md:py-3 px-2 md:px-4 whitespace-nowrap hidden md:table-cell">
                           ₹{item.unitPrice || "0"}
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">
-                          ₹{item.totalAmount || "0"}{" "}
+                        <td className="py-2 md:py-3 px-2 md:px-4 whitespace-nowrap hidden lg:table-cell">
+                          ₹{item.totalAmount || "0"}
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">
+                        <td className="py-2 md:py-3 px-2 md:px-4 whitespace-nowrap">
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${
                               item.status === "Active"
@@ -868,21 +1034,23 @@ export default function InventoryPage() {
                             {item.status || "-"}
                           </span>
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">
+                        <td className="py-2 md:py-3 px-2 md:px-4 whitespace-nowrap hidden sm:table-cell">
                           {item.inStock ?? 0}
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">
+                        <td className="py-2 md:py-3 px-2 md:px-4 whitespace-nowrap hidden lg:table-cell">
                           {item.supplier || "-"}
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">
+                        <td className="py-2 md:py-3 px-2 md:px-4 whitespace-nowrap hidden lg:table-cell">
                           {item.location || "-"}
                         </td>
-                        <td className="py-4 px-4 whitespace-nowrap">
+                        <td className="py-2 md:py-3 px-2 md:px-4 whitespace-nowrap sticky right-0 bg-white z-10">
                           <Popover
                             open={openPopoverId === item.id}
                             onOpenChange={(open) => {
                               if (open) {
-                                setOpenPopoverId(item.id || null);
+                                setOpenPopoverId(
+                                  item.id !== undefined ? item.id : null
+                                );
                               } else {
                                 setOpenPopoverId(null);
                               }
@@ -973,7 +1141,7 @@ export default function InventoryPage() {
                 className={`group overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-xl cursor-pointer ${
                   item.id !== undefined && selectedItems.includes(item.id)
                     ? "ring-2 ring-primary"
-                    : "hover:ring-1 hover:ring-[#0089ff]"
+                    : "hover:ring-1"
                 } ${
                   item.id !== undefined &&
                   isAnimating &&
@@ -987,15 +1155,15 @@ export default function InventoryPage() {
               >
                 <div
                   className="h-2 transition-all duration-300 group-hover:h-3"
-                  style={{ backgroundColor: "#0089ff" }}
+                  style={{ backgroundColor: getCategoryColor(item.category) }}
                 ></div>
-                <CardContent className="p-4 relative hover:bg-blue-50/30">
+                <CardContent className="p-4 relative hover:bg-blue-50/30 overflow-hidden">
                   {/* Animated background overlay on hover */}
                   <div className="absolute inset-0 bg-gradient-to-b from-blue-50/0 to-blue-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                   <div className="flex justify-between items-start mb-4 relative">
                     <div className="flex-1">
-                      <h3 className="font-medium truncate text-gray-800 group-hover:text-[#0089ff] transition-colors duration-300">
+                      <h3 className="font-medium truncate text-gray-800 group-hover:text-blue-500 transition-colors duration-300">
                         {item.name || "Unnamed Product"}
                       </h3>
                       <p className="text-xs text-muted-foreground">
