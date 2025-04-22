@@ -37,6 +37,13 @@ export async function PATCH(
 
     const body = await request.json();
 
+    if (existingItem.qtyPurchased! > body.qtyPurchased) {
+      throw new ApiError(
+        "Quantity purchased can not decrease than current amount",
+        400
+      );
+    }
+
     // Update inventory item
     const updatedItem = await db
       .update(inventory)

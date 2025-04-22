@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import { usePathname } from "next/navigation"
-import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
-import { Sidebar } from "@/components/sidebar"
-import { AiAssistant } from "@/components/ai-assistant/ai-assistant"
-import { MobileNav } from "@/components/mobile-nav"
+import { usePathname } from "next/navigation";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
+import { Sidebar } from "@/components/sidebar";
+import { AiAssistant } from "@/components/ai-assistant/ai-assistant";
+import { MobileNav } from "@/components/mobile-nav";
 
 export default function ClientLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const pathname = usePathname()
-  const hideLayout = pathname === "/login"
+  const pathname = usePathname();
+  const hideLayout = pathname === "/login";
 
   return (
     <ThemeProvider
@@ -22,9 +22,9 @@ export default function ClientLayout({
       enableSystem
       disableTransitionOnChange
     >
-        
       <div className="min-h-screen bg-background">
-        {!hideLayout && <Sidebar />}
+        <div className="fixed left-0 w-64">{!hideLayout && <Sidebar />}</div>
+
         <div className={!hideLayout ? "md:pl-64" : ""}>
           {!hideLayout && (
             <div className="flex h-16 items-center px-4 border-b md:px-6">
@@ -38,5 +38,5 @@ export default function ClientLayout({
       </div>
       <Toaster />
     </ThemeProvider>
-  )
+  );
 }
