@@ -27,6 +27,7 @@ import {
   FileIcon,
   Wrench,
   Truck,
+  FileClock ,
   Building2,
   Package,
   Bell,
@@ -117,6 +118,12 @@ export function Sidebar({ className }: SidebarProps) {
       icon: Package,
       href: "/stocks-and-inventory",
       active: pathname.startsWith("/stocks-and-inventory"),
+    },
+    {
+      label: "Audit Logs",
+      icon: FileClock ,
+      href: "/audit-log",
+      active: pathname.startsWith("/audit-log"),
     },
     {
       label: "Notifications",

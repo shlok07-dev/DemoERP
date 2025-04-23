@@ -43,6 +43,8 @@ export default function InventoryItemPage() {
   const [assetNameError, setAssetNameError] = useState("")
   const [supplierNameError, setSupplierNameError] = useState("")
   const [locationError, setLocationError] = useState("")
+  const [logs, setLogs] = useState([])
+  
   // Add a new state for in-stock error after the other error states
   const [inStockError, setInStockError] = useState("")
 
@@ -215,17 +217,60 @@ export default function InventoryItemPage() {
     return true
   }
 
-  const checkAssetIdExists = (productId: string) => {
-    return items.some(
-      (item) => item.productId.replace(/\s+/g, "").toLowerCase() === productId.replace(/\s+/g, "").toLowerCase(),
-    )
-  }
+// Assuming your 'logs' should store full audit log entries (not just deleted product ids)
+useEffect(() => {
+  const fetchAuditLogs = async () => {
+    try {
+      const response = await fetch("/api/fetchAuditLog");
+
+      if (!response.ok) {
+        throw new Error(`Error fetching audit logs: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      // Filter out productIds from the logs with action == 'delete'
+      const deletedProductIds = data
+        .filter((log: any) => log.action === "delete" && log.oldData?.productId)
+        .map((log: any) => log.oldData.productId);
+
+      
+      setLogs(data);  // Save the full logs here, not just the productIds
+    } catch (err) {
+      console.error("Failed to fetch audit logs:", err);
+      setLogs([]); // Set empty array in case of error
+    }
+  };
+
+  fetchAuditLogs();
+}, []);
+
+// Function to check if assetId exists
+const checkAssetIdExists = (productId: string) => {
+  // Check in current items for matching productId
+  const itemExists = items.some(
+    (item) => item.productId.replace(/\s+/g, "").toLowerCase() === productId.replace(/\s+/g, "").toLowerCase()
+  );
+
+  // Check in logs for deleted productId
+  const deletedExists = logs.some(
+    (log) =>
+      log.action === "delete" && log.oldData?.productId.replace(/\s+/g, "").toLowerCase() === productId.replace(/\s+/g, "").toLowerCase()
+  );
+
+  return itemExists || deletedExists; // Returns true if productId exists in either of the arrays
+};
+
+
+    
+
 
   const validateAssetId = () => {
     if (!formData.productId.trim()) {
       setAssetIdError("Asset ID cannot be empty or contain only spaces")
       return
     }
+
+    
     if (!isUpdateMode && formData.productId && checkAssetIdExists(formData.productId)) {
       setAssetIdError("This Asset ID already exists. Please use a different ID.")
     } else {
