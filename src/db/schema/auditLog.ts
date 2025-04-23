@@ -46,7 +46,7 @@ export const auditLogRelations = relations(auditLog, ({ one }) => ({
 }));
 
 // Helper types for tracking changes
-export type AuditAction = "create" | "update" | "delete";
+export type AuditAction = "create" | "update" | "delete" | "restore";
 
 // Example function to log audit events
 export const createAuditLog = async (
