@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { createAuditLog } from "@/db/schema/auditLog";
+import { db } from "@/db";
 
 export async function POST(req: NextRequest) {
   const user = await getUserFromRequest();
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
     const userAgent = req.headers.get("user-agent") || "unknown";
 
     await createAuditLog(
-      undefined, // fallback to default db if you export it inside createAuditLog
+      db, // fallback to default db if you export it inside createAuditLog
       Number(user.id),
       "logout",
       "auth",
