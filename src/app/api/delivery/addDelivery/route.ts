@@ -94,7 +94,7 @@ export async function POST(request: Request) {
         })
         .returning();
 
-      // ✅ Audit log entry
+      // Audit log entry
       await createAuditLog(
         tx,
         Number(user.id),

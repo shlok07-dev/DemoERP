@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { inventory, deletedInventory } from "@/db/schema";
-import { createAuditLog } from "@/db/schema/auditLog"; // ✅ Added import
+import { createAuditLog } from "@/db/schema/auditLog"; 
 import { getUserFromRequest } from "@/lib/auth";
 import { ApiError, handleApiError } from "@/lib/utils";
 import { eq } from "drizzle-orm";

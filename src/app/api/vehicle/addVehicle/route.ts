@@ -64,7 +64,7 @@ export async function POST(request: Request) {
         })
         .returning();
 
-      // ✅ Log the creation of a new vehicle
+      // Log the creation of a new vehicle
       await createAuditLog(
         tx,
         Number(user.id),

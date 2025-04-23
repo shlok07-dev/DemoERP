@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { users } from "@/db/schema";
+import { createAuditLog } from "@/db/schema/auditLog";
 import { eq } from "drizzle-orm";
 import { compare } from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
   }
 
   const isMatch = password === user.password;
-  //   || await compare(password, user.password);
+  // || await compare(password, user.password);
   if (!isMatch) {
     return NextResponse.json(
       { message: "Invalid credentials" },
@@ -50,6 +51,19 @@ export async function POST(req: NextRequest) {
     process.env.JWT_SECRET!,
     { expiresIn: "1d" }
   );
+
+  const ipAddress =
+    req.headers.get("x-forwarded-for") ||
+    req.headers.get("x-real-ip") ||
+    req.ip ||
+    "unknown";
+  const userAgent = req.headers.get("user-agent") || "unknown";
+
+  await createAuditLog(db, user.id, "login", "auth", user.id, null, null, {
+    ipAddress: ipAddress as string,
+    userAgent,
+    requestId: crypto.randomUUID(),
+  });
 
   // utils/filterUser.ts
   function filterUser(user: any) {
