@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       db, // fallback to default db if you export it inside createAuditLog
       Number(user.id),
       "logout",
-      "auth",
+      "user",
       user.id,
       null,
       null,

@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     "unknown";
   const userAgent = req.headers.get("user-agent") || "unknown";
 
-  await createAuditLog(db, user.id, "login", "auth", user.id, null, null, {
+  await createAuditLog(db, user.id, "login", "user", user.id, null, null, {
     ipAddress: ipAddress as string,
     userAgent,
     requestId: crypto.randomUUID(),
