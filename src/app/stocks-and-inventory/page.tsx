@@ -764,7 +764,7 @@ export default function InventoryPage() {
             )}
 
             <Link
-              href="/stocks-and-inventory/update-inventory"
+              href="/stocks-and-inventory/add-update-inventory"
               className="w-full sm:w-auto"
             >
               <Button className="bg-[#0089ff] hover:bg-[#248cd8] w-full">
@@ -1068,7 +1068,7 @@ export default function InventoryPage() {
                             <PopoverContent className="w-48 p-2">
                               <div className="flex flex-col space-y-1">
                                 <Link
-                                  href={`/stocks-and-inventory/update-inventory?id=${
+                                  href={`/stocks-and-inventory/add-update-inventory?id=${
                                     item.id || ""
                                   }`}
                                 >
@@ -1188,7 +1188,7 @@ export default function InventoryPage() {
                       >
                         <div className="flex flex-col space-y-1">
                           <Link
-                            href={`/stocks-and-inventory/update-inventory?id=${
+                            href={`/stocks-and-inventory/add-update-inventory?id=${
                               item.id || ""
                             }`}
                           >
