@@ -1,7 +1,5 @@
 "use client";
 
-import type React from "react";
-
 import { useState, useEffect, useMemo, type ReactNode } from "react";
 import {
   Eye,
@@ -13,14 +11,12 @@ import {
   Download,
   FilterX,
   ChevronDown,
-  ArrowUpDown,
 } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { TableHead } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -206,26 +202,44 @@ export default function AuditLogPage() {
   const processedLogs = useMemo(() => {
     // First filter the logs
     let result = logs.filter((log) => {
-      // Create a string of all searchable fields
-      const searchableText = Object.entries(log)
-        .filter(
-          ([key, value]) =>
-            typeof value === "string" &&
-            !key.includes("data") &&
-            !key.includes("agent")
-        )
-        .map(([_, value]) => String(value).toLowerCase())
-        .join(" ");
+      // If no search term, return all logs
+      if (!searchTerm || searchTerm.trim() === "") {
+        return true;
+      }
 
-      // Check if log matches search term
-      const matchesSearch =
-        searchTerm === "" || searchableText.includes(searchTerm.toLowerCase());
+      const searchTermLower = searchTerm.toLowerCase().trim();
 
-      // Check if log matches table filter
-      const matchesTableFilter = !tableFilter || log.tableName === tableFilter;
+      // Convert recordId to string and check if it includes the search term
+      const recordIdStr = String(log.recordId).toLowerCase();
+      if (recordIdStr.includes(searchTermLower)) {
+        return true;
+      }
 
-      return matchesSearch && matchesTableFilter;
+      // Check other searchable fields
+      for (const [key, value] of Object.entries(log)) {
+        // Skip complex objects and specific fields we don't want to search
+        if (
+          typeof value !== "string" ||
+          key.includes("data") ||
+          key.includes("agent") ||
+          key === "changedFields" ||
+          key === "metadata"
+        ) {
+          continue;
+        }
+
+        if (value.toLowerCase().includes(searchTermLower)) {
+          return true;
+        }
+      }
+
+      return false;
     });
+
+    // Apply table filter
+    if (tableFilter) {
+      result = result.filter((log) => log.tableName === tableFilter);
+    }
 
     // Then sort the filtered logs
     if (sortState.column && sortState.direction) {
@@ -239,8 +253,8 @@ export default function AuditLogPage() {
 
         // Handle timestamp sorting specially
         if (sortState.column === "timestamp") {
-          const aDate = new Date(String(aValue));
-          const bDate = new Date(String(bValue));
+          const aDate = new Date(String(aValue || ""));
+          const bDate = new Date(String(bValue || ""));
           return sortState.direction === "asc"
             ? aDate.getTime() - bDate.getTime()
             : bDate.getTime() - aDate.getTime();
@@ -261,8 +275,8 @@ export default function AuditLogPage() {
         }
 
         // Default comparison for other types
-        const aStr = String(aValue);
-        const bStr = String(bValue);
+        const aStr = String(aValue || "");
+        const bStr = String(bValue || "");
         return sortState.direction === "asc"
           ? aStr.localeCompare(bStr)
           : bStr.localeCompare(aStr);
@@ -288,6 +302,8 @@ export default function AuditLogPage() {
   // Format timestamp without timezone conversion
   const formatTimestamp = (timestamp: string): string => {
     try {
+      if (!timestamp) return "Invalid date";
+
       // For ISO strings, parse but preserve the original time without timezone conversion
       if (typeof timestamp === "string" && timestamp.includes("T")) {
         // Extract just the date and time parts without timezone conversion
@@ -318,7 +334,9 @@ export default function AuditLogPage() {
 
   // Get action badge color
   const getActionBadge = (action: string): ReactNode => {
-    switch (action?.toLowerCase()) {
+    if (!action) return <Badge>Unknown</Badge>;
+
+    switch (action.toLowerCase()) {
       case "add":
       case "create":
       case "insert":
@@ -392,43 +410,9 @@ export default function AuditLogPage() {
 
   // Add a function to get unique table names
   const uniqueTables = useMemo(() => {
-    const tables = logs.map((log) => log.tableName);
+    const tables = logs.map((log) => log.tableName).filter(Boolean);
     return [...new Set(tables)].sort();
   }, [logs]);
-
-  // Get sort icon for column
-  const getSortIcon = (column: string) => {
-    if (sortState.column !== column) {
-      return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground" />;
-    }
-
-    if (sortState.direction === "asc") {
-      return <ChevronDown className="ml-1 h-3 w-3 rotate-180" />;
-    }
-
-    return <ChevronDown className="ml-1 h-3 w-3" />;
-  };
-
-  // Reusable sortable table head component
-  const SortableTableHead = ({
-    column,
-    children,
-    className = "",
-  }: {
-    column: string;
-    children: React.ReactNode;
-    className?: string;
-  }) => (
-    <TableHead
-      className={`cursor-pointer ${className}`}
-      onClick={() => handleSort(column)}
-    >
-      <div className="flex items-center">
-        {children}
-        {getSortIcon(column)}
-      </div>
-    </TableHead>
-  );
 
   return (
     <div className="container mx-auto py-4 px-4 md:py-6 md:px-6">
@@ -459,7 +443,7 @@ export default function AuditLogPage() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search logs..."
+              placeholder="Search by Product ID, user, table..."
               className="pl-8"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -541,10 +525,12 @@ export default function AuditLogPage() {
                 </p>
                 <p className="text-2xl font-bold text-emerald-600">
                   {
-                    logs.filter((log) =>
-                      ["add", "create", "insert"].includes(
-                        log.action.toLowerCase()
-                      )
+                    logs.filter(
+                      (log) =>
+                        log.action &&
+                        ["add", "create", "insert"].includes(
+                          log.action.toLowerCase()
+                        )
                     ).length
                   }
                 </p>
@@ -555,10 +541,12 @@ export default function AuditLogPage() {
                 </p>
                 <p className="text-2xl font-bold text-blue-600">
                   {
-                    logs.filter((log) =>
-                      ["update", "edit", "modify"].includes(
-                        log.action.toLowerCase()
-                      )
+                    logs.filter(
+                      (log) =>
+                        log.action &&
+                        ["update", "edit", "modify"].includes(
+                          log.action.toLowerCase()
+                        )
                     ).length
                   }
                 </p>
@@ -569,8 +557,10 @@ export default function AuditLogPage() {
                 </p>
                 <p className="text-2xl font-bold text-rose-600">
                   {
-                    logs.filter((log) =>
-                      ["delete", "remove"].includes(log.action.toLowerCase())
+                    logs.filter(
+                      (log) =>
+                        log.action &&
+                        ["delete", "remove"].includes(log.action.toLowerCase())
                     ).length
                   }
                 </p>
@@ -603,6 +593,15 @@ export default function AuditLogPage() {
               <div className="p-8 text-center">
                 <p className="text-muted-foreground">No audit logs found.</p>
               </div>
+            ) : processedLogs.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="text-muted-foreground">
+                  No matching logs found for your search criteria.
+                </p>
+                <Button variant="link" onClick={resetFilters} className="mt-2">
+                  Clear filters
+                </Button>
+              </div>
             ) : (
               <div className="relative">
                 {/* Table container with fixed layout to ensure consistent column widths */}
@@ -613,58 +612,88 @@ export default function AuditLogPage() {
                       <thead>
                         <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                           <th
-                            className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground ${columnWidths.action}`}
+                            className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer ${columnWidths.action}`}
+                            onClick={() => handleSort("action")}
                           >
-                            <div
-                              className="flex items-center cursor-pointer"
-                              onClick={() => handleSort("action")}
-                            >
+                            <div className="flex items-center">
                               Action
-                              {getSortIcon("action")}
+                              {sortState.column === "action" && (
+                                <ChevronDown
+                                  className={`ml-1 h-4 w-4 ${
+                                    sortState.direction === "desc"
+                                      ? "rotate-180"
+                                      : ""
+                                  } transition-transform`}
+                                />
+                              )}
                             </div>
                           </th>
                           <th
-                            className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground ${columnWidths.recordId}`}
+                            className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer ${columnWidths.recordId}`}
+                            onClick={() => handleSort("recordId")}
                           >
-                            <div
-                              className="flex items-center cursor-pointer"
-                              onClick={() => handleSort("recordId")}
-                            >
+                            <div className="flex items-center">
                               Record ID
-                              {getSortIcon("recordId")}
+                              {sortState.column === "recordId" && (
+                                <ChevronDown
+                                  className={`ml-1 h-4 w-4 ${
+                                    sortState.direction === "desc"
+                                      ? "rotate-180"
+                                      : ""
+                                  } transition-transform`}
+                                />
+                              )}
                             </div>
                           </th>
                           <th
-                            className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground ${columnWidths.userId}`}
+                            className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer ${columnWidths.userId}`}
+                            onClick={() => handleSort("userId")}
                           >
-                            <div
-                              className="flex items-center cursor-pointer"
-                              onClick={() => handleSort("userId")}
-                            >
+                            <div className="flex items-center">
                               User ID
-                              {getSortIcon("userId")}
+                              {sortState.column === "userId" && (
+                                <ChevronDown
+                                  className={`ml-1 h-4 w-4 ${
+                                    sortState.direction === "desc"
+                                      ? "rotate-180"
+                                      : ""
+                                  } transition-transform`}
+                                />
+                              )}
                             </div>
                           </th>
                           <th
-                            className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground ${columnWidths.tableName}`}
+                            className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer ${columnWidths.tableName}`}
+                            onClick={() => handleSort("tableName")}
                           >
-                            <div
-                              className="flex items-center cursor-pointer"
-                              onClick={() => handleSort("tableName")}
-                            >
+                            <div className="flex items-center">
                               Table
-                              {getSortIcon("tableName")}
+                              {sortState.column === "tableName" && (
+                                <ChevronDown
+                                  className={`ml-1 h-4 w-4 ${
+                                    sortState.direction === "desc"
+                                      ? "rotate-180"
+                                      : ""
+                                  } transition-transform`}
+                                />
+                              )}
                             </div>
                           </th>
                           <th
-                            className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground ${columnWidths.timestamp}`}
+                            className={`h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-pointer ${columnWidths.timestamp}`}
+                            onClick={() => handleSort("timestamp")}
                           >
-                            <div
-                              className="flex items-center cursor-pointer"
-                              onClick={() => handleSort("timestamp")}
-                            >
+                            <div className="flex items-center">
                               Timestamp
-                              {getSortIcon("timestamp")}
+                              {sortState.column === "timestamp" && (
+                                <ChevronDown
+                                  className={`ml-1 h-4 w-4 ${
+                                    sortState.direction === "desc"
+                                      ? "rotate-180"
+                                      : ""
+                                  } transition-transform`}
+                                />
+                              )}
                             </div>
                           </th>
                           <th
@@ -694,17 +723,17 @@ export default function AuditLogPage() {
                             <td
                               className={`p-4 align-middle font-medium ${columnWidths.recordId}`}
                             >
-                              {log.recordId}
+                              {log.recordId || "N/A"}
                             </td>
                             <td
                               className={`p-4 align-middle ${columnWidths.userId}`}
                             >
-                              {log.userId}
+                              {log.userId || "N/A"}
                             </td>
                             <td
                               className={`p-4 align-middle ${columnWidths.tableName}`}
                             >
-                              {log.tableName}
+                              {log.tableName || "N/A"}
                             </td>
                             <td
                               className={`p-4 align-middle ${columnWidths.timestamp}`}
