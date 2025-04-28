@@ -247,7 +247,7 @@ export default function InventoryPage() {
 
   // Generate real data for charts based on actual inventory
   const inventoryStats = useMemo(() => {
-    if (!filteredItems || filteredItems.length === 0) {
+    if (!items || items.length === 0) {
       return {
         totalCategories: 0,
         totalItems: 0,
@@ -263,7 +263,7 @@ export default function InventoryPage() {
     const suppliers = new Set<string>();
     let totalCost = 0;
 
-    filteredItems.forEach((item) => {
+    items.forEach((item) => {
       if (item.category) categories.add(item.category);
       if (item.supplier) suppliers.add(item.supplier);
 
@@ -277,7 +277,7 @@ export default function InventoryPage() {
 
     // Generate category distribution data
     const categoryMap = new Map<string, number>();
-    filteredItems.forEach((item) => {
+    items.forEach((item) => {
       if (item.category) {
         const count = categoryMap.get(item.category) || 0;
         categoryMap.set(item.category, count + 1);
@@ -327,13 +327,13 @@ export default function InventoryPage() {
 
     return {
       totalCategories: categories.size,
-      totalItems: filteredItems.length,
+      totalItems: items.length,
       totalCost,
       totalSuppliers: suppliers.size,
       categoryData: topCategories,
       monthlyValueData,
     };
-  }, [filteredItems]);
+  }, [items]);
 
   // Component for countdown display
   const CountdownDisplay = ({ initialTime }: { initialTime: number }) => {
@@ -530,7 +530,7 @@ export default function InventoryPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-3xl font-bold">
-                    {inventoryStats.totalItems || 0}
+                    {filteredItems.length || 0}
                   </p>
                   <p className="text-sm text-muted-foreground">Total items</p>
                   <div className="flex items-center mt-2">
@@ -970,6 +970,15 @@ export default function InventoryPage() {
                           {item.id !== undefined && (
                             <input
                               type="checkbox"
+                              checked={
+                                item.id !== undefined &&
+                                selectedItems.includes(item.id)
+                              }
+                              onChange={() =>
+                                item.id !== undefined &&
+                                toggleItemSelection(item.id)
+                              }
+                              className="rounded"
                               checked={
                                 item.id !== undefined &&
                                 selectedItems.includes(item.id)
